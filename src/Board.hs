@@ -46,10 +46,11 @@ initWorld = World initBoard Black ""
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)
 makeMove :: Board -> Col -> Position -> Maybe Board
-makeMove b c (x,y) = if ((lookup (x,y) (pieces b)) == Nothing)
-                        then Just b' {pieces = pieces b++[((x,y),c)]}
-                        else Nothing
-                        where b' = b{won = (checkWon b)}
+makeMove b c (x,y) =  if won b /= Nothing then Nothing  -- Do not accept new moves, once there is a winner.
+                      else if ((lookup (x,y) (pieces b)) == Nothing)
+                            then Just b'{won = checkWon b'}  -- Update winner after pieces.
+                           else Nothing
+                            where b' = b{pieces = pieces b++[((x,y),c)]}  -- Update pieces first.
 
 -- Check whether the board is in a winning state for either player.
 -- Returns 'Nothing' if neither player has won yet
@@ -59,7 +60,10 @@ eliminate (Just a) = a
 
 
 checkWon :: Board -> Maybe Col
-checkWon b = checkAllPos b
+--checkWon b = checkAllPos b  -- Does not seem to detect properly.
+checkWon b = if longest b Black == target b then Just Black
+             else if longest b White == target b then Just White
+             else Nothing
 
 checkAllPos :: Board -> Maybe Col
 checkAllPos board =
@@ -102,7 +106,7 @@ For every position ((x, y), col) in the 'pieces' list:
 -}
 data Direction = N | E | NE
 descend :: Board -> Col -> Position -> Direction -> Int
-descend b c (x,y) dir = if isC (x,y) then  -- descend up, up-right, right
+descend b c (x,y) dir = if isC (x,y) then  -- descend north, east, north-east
                             (1::Int) + descend b c next dir
                         else 0
                         where isC :: Position -> Bool
@@ -117,17 +121,18 @@ descend b c (x,y) dir = if isC (x,y) then  -- descend up, up-right, right
                                         NE -> (x+1,y+1)
 
 longest :: Board -> Col -> Int
-longest b c = maximum [max nd (max ed ned) |  -- the largest of the three descensions
-                            nd <- [descend b c (x,y) N | x <- [0..size b -1], y <- [0..size b -1]],  -- descend north
-                            ed <- [descend b c (x,y) E | x <- [0..size b -1], y <- [0..size b -1]],  -- descend east
-                            ned <- [descend b c (x,y) NE | x <- [0..size b -1], y <- [0..size b -1]]  -- descend north-east
-                      ]
+longest b c = Prelude.maximum [max nd (max ed ned) |  -- the largest of the three descensions
+                                nd <- [descend b c (x,y) N | x <- [0..size b -1], y <- [0..size b -1]],  -- descend north
+                                ed <- [descend b c (x,y) E | x <- [0..size b -1], y <- [0..size b -1]],  -- descend east
+                                ned <- [descend b c (x,y) NE | x <- [0..size b -1], y <- [0..size b -1]]  -- descend north-east
+                              ]
 
 -- An evaluation function for a minimax search. Given a board and a colour
 -- return an integer indicating how good the board is for that colour.
 evaluate :: Board -> Col -> Int
 evaluate b c = if lc == size b -1 then size b -1  -- if c can win from here = best
                else if loc == size b -1 then 1- size b  -- else if !c can win from here = worst
+               --TODO update the two ifs to acknowledge blocked rows.
                else lc-loc-- otherwise longest c - longest !c
                where lc = longest b c
                      loc = longest b $ other c

@@ -8,7 +8,7 @@ BASIC IMPLEMENTATION
 BASIC RULES
 [] Basic Game Specification
     [x] Black plays first
-    [] Can only place piece on empty square
+    [x] Can only place piece on empty square
     [] Player wins when 3 in a row
 
 BASIC AI

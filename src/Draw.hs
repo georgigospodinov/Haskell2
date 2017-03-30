@@ -6,7 +6,7 @@ import Board
 import Debug.Trace
 
 
--- Constants?
+-- Constants
 window_width = 600::Int
 window_height = 600::Int
 wwh = - fromIntegral window_width / 2  -- window width halved
@@ -25,22 +25,14 @@ pc White = white
 -- This will need to extract the Board from the world state and draw it
 -- as a grid plus pieces.
 drawWorld :: World -> Picture
---drawWorld w = Color blue $ Circle 100
 --drawWorld w = loadBMP "img/tiger.bmp" -- Monad
-drawWorld w = Pictures [grid $ size $ board w, tiles $ pieces $ board w, winmsg (won (board w))] --
---drawWorld w = Pictures [grid $ size $ board w, tiles [((0,0), White), ((1,1), Black)]]  -- testing example
+drawWorld w = Pictures [grid $ size $ board w, tiles $ pieces $ board w, winmsg (won (board w))]
 
 grid :: Int -> Picture
 grid b_size = Pictures [square (x, y) |
                                x <- [wwh, wwh+sq_side..wwh+sq_side*(fromIntegral b_size -1)],
                                y <- [whh, whh+sq_side..whh+sq_side*(fromIntegral b_size -1)]
                        ]
-
-winmsg :: (Maybe Col) -> Picture
-winmsg Nothing = trace ("nothing") $ Text ""
-winmsg (Just c)
-  | c == Black = trace ("black") $ Text "Black Wins"
-  | c == White = trace ("white") $ Text "White Wins"
 
 -- square drawing :: starting position -> side -> picture drawn
 square :: Point -> Picture
@@ -54,3 +46,9 @@ tile :: (Position, Col) -> Picture
 tile ((x, y), c) = translate xtranslation ytranslation $ Color (pc c) $ circleSolid (sq_side/2)
                    where xtranslation = (fromIntegral x*sq_side+wwh+sq_side/2)
                          ytranslation = (fromIntegral y*sq_side+whh+sq_side/2)
+
+winmsg :: (Maybe Col) -> Picture
+winmsg Nothing = trace ("nothing") $ Text ""
+winmsg (Just c)
+  | c == Black = trace ("black") $ translate wwh 0 $ Text "Black Wins"
+  | c == White = trace ("white") $ translate wwh 0 $ Text "White Wins"
