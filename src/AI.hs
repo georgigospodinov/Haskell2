@@ -74,5 +74,3 @@ isEmptyCell :: Board -> Position -> Bool
 isEmptyCell bd cell = let cells = filter ((==cell).fst) (pieces bd)
                        in if length cells == 0 then True
                        else False
-
-cellBeside
