@@ -3,6 +3,9 @@ module Draw where
 import Graphics.Gloss
 import Board
 
+import Debug.Trace
+
+
 -- Constants?
 window_width = 600::Int
 window_height = 600::Int
@@ -24,7 +27,7 @@ pc White = white
 drawWorld :: World -> Picture
 --drawWorld w = Color blue $ Circle 100
 --drawWorld w = loadBMP "img/tiger.bmp" -- Monad
-drawWorld w = Pictures [grid $ size $ board w, tiles $ pieces $ board w]
+drawWorld w = Pictures [grid $ size $ board w, tiles $ pieces $ board w, winmsg (won (board w))] --
 --drawWorld w = Pictures [grid $ size $ board w, tiles [((0,0), White), ((1,1), Black)]]  -- testing example
 
 grid :: Int -> Picture
@@ -32,6 +35,12 @@ grid b_size = Pictures [square (x, y) |
                                x <- [wwh, wwh+sq_side..wwh+sq_side*(fromIntegral b_size -1)],
                                y <- [whh, whh+sq_side..whh+sq_side*(fromIntegral b_size -1)]
                        ]
+
+winmsg :: (Maybe Col) -> Picture
+winmsg Nothing = trace ("nothing") $ Text ""
+winmsg (Just c)
+  | c == Black = trace ("black") $ Text "Black Wins"
+  | c == White = trace ("white") $ Text "White Wins"
 
 -- square drawing :: starting position -> side -> picture drawn
 square :: Point -> Picture
