@@ -1,0 +1,19 @@
+BASIC SPECIFICATION
+
+
+BASIC IMPLEMENTATION
+[x] Draw Board
+[x] Player can place piece
+
+BASIC RULES
+[] Basic Game Specification
+    [x] Black plays first
+    [] Can only place piece on empty square
+    [] Player wins when 3 in a row
+
+BASIC AI
+[] AI.hs move generator
+    [x] Generates all possible moves
+
+[] Board.hs
+    [] Decides best move

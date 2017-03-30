@@ -93,5 +93,3 @@ evaluate b c = if lc == size b -1 then size b -1  -- if c can win from here = be
                where lc = longest b c
                      loc = longest b $ other c
 
-
-

@@ -62,4 +62,17 @@ updateWorld t w = w
  player has won and display a message if so.
 -}
 
+--gen :: Board -> Col -> [Position]
+--gen board colour = m
 
+
+emptyCells :: Board -> [Position]
+emptyCells bd = filter (isEmptyCell bd) boardCells
+                where boardCells = [(x,y) | x <- [0 .. ((size bd) - 1)], y <- [0 .. ((size bd) - 1)] ]
+
+isEmptyCell :: Board -> Position -> Bool
+isEmptyCell bd cell = let cells = filter ((==cell).fst) (pieces bd)
+                       in if length cells == 0 then True
+                       else False
+
+cellBeside
