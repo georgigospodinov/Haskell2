@@ -52,6 +52,14 @@ recurse md gt = if md == 0 then maximum val_moves
 -- How good will the board be after this move? (a valid move is assumed)
 evalMove :: Board -> Position -> Col -> (Int, Position)
 evalMove b p c = case makeMove b c p of Just b' -> (evaluate b' c, p)
+{- Edwin suggested that we look for shapes when evaluating
+    (BB_BB) is a great position for Black, terrible for White
+    also, represent the board in a different way will likely
+        make it easier to implement an evaluation function
+    our current evalution takes forever because its n^2 at every node in the tree
+
+    Also, we can probably move some of the evaluation from Board.hs to AI.hs
+-}
 
 -- Update the world state after some time has passed
 updateWorld :: Float -- ^ time since last update (you can ignore this)

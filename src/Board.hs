@@ -117,14 +117,12 @@ next (x,y) NW = (x+1, y-1)
 next (x,y) SE = (x-1, y+1)
 next (x,y) SW = (x-1, y-1)
 
-descend :: Board -> Col -> Direction -> Position -> Int
-descend b c dir (x,y) = if outOfBounds then -1  -- negatve one means that the row is blocked
-                        else if colOf (x,y) == Just (other c) then -1
-                        else if colOf (x,y) == Just c then
-                                if length == -1 then -1  -- pass-up blocked
-                                else (1::Int) + length
-                        else 0  -- empty
-                        where length = descend b c dir $ next (x,y) dir
+descend :: Board -> Col -> Direction -> Position -> (Int, Bool)  -- length, (blocked?)
+descend b c dir (x,y) = if outOfBounds then (0, True)
+                        else if colOf (x,y) == Just (other c) then (0, True)
+                        else if colOf (x,y) == Just c then (l+1, bl)
+                        else (0, False)  -- empty
+                        where (l, bl) = descend b c dir $ next (x,y) dir
                               colOf :: Position -> Maybe Col
                               colOf pos = case piece_at pos of
                                             [] -> Nothing
@@ -134,7 +132,7 @@ descend b c dir (x,y) = if outOfBounds then -1  -- negatve one means that the ro
                               outOfBounds = x < 0 || y < 0 || x >= size b || y >= size b
 
 longest :: Board -> Col -> Int  -- the longest when descending from every square in all directions
-longest b c = Prelude.maximum [descend b c dir (x,y) | dir <- [N ..], x <- [0..size b -1], y <- [0..size b -1]]
+longest b c = Prelude.maximum [fst $ descend b c dir (x,y) | dir <- [N ..], x <- [0..size b -1], y <- [0..size b -1]]
 
 -- An evaluation function for a minimax search. Given a board and a colour
 -- return an integer indicating how good the board is for that colour.
