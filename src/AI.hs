@@ -40,16 +40,16 @@ buildTree gen b c = let moves = gen b c in -- generated moves
 getBestMove :: Int -- ^ Maximum search depth
                -> GameTree -- ^ Initial game tree
                -> Position
-getBestMove maxdepth gt = undefined
--- if maxdepth == 0 then pick best move of current list
--- else for every move in the list -> recurse with maxdepth -1
+getBestMove maxdepth gt = snd $ recurse maxdepth gt
 
-asdf_recurse md gt = if md == 0 then maximum val_moves
-                      else (0,(0,0))  -- some recursive call with val_moves, probably
-                      where next_positions = map fst $ next_moves gt
-                            val_moves = [evalMove (game_board gt) p (game_turn gt) | p <- next_positions]
+recurse :: Int -> GameTree -> (Int, Position)  -- takes forever...
+recurse md gt = if md == 0 then maximum val_moves
+                else maximum [(value + fst (recurse (md-1) gt), move) |
+                              (value, move) <- val_moves]
+                where next_positions = map fst $ next_moves gt
+                      val_moves = [evalMove (game_board gt) p (game_turn gt) | p <- next_positions]
 
--- How good will the board be after this move?
+-- How good will the board be after this move? (a valid move is assumed)
 evalMove :: Board -> Position -> Col -> (Int, Position)
 evalMove b p c = case makeMove b c p of Just b' -> (evaluate b' c, p)
 
@@ -76,10 +76,12 @@ updateWorld t w = w
 --gen :: Board -> Col -> [Position]
 --gen board colour = m
 
+-- need a generator that follows some rules
 
-emptyCells :: Board -> [Position]
-emptyCells bd = filter (isEmptyCell bd) boardCells
-                where boardCells = [(x,y) | x <- [0 .. ((size bd) - 1)], y <- [0 .. ((size bd) - 1)] ]
+-- last resort generator, when the above generator finds nothing
+emptyCells :: Board -> Col -> [Position]
+emptyCells bd c = filter (isEmptyCell bd) boardCells
+                  where boardCells = [(x,y) | x <- [0 .. ((size bd) - 1)], y <- [0 .. ((size bd) - 1)] ]
 
 isEmptyCell :: Board -> Position -> Bool
 isEmptyCell bd cell = let cells = filter ((==cell).fst) (pieces bd)

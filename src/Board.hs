@@ -55,8 +55,9 @@ makeMove b c (x,y) =  if won b /= Nothing then Nothing  -- Do not accept new mov
 -- Check whether the board is in a winning state for either player.
 -- Returns 'Nothing' if neither player has won yet
 -- Returns 'Just c' if the player 'c' has won
-eliminate :: Maybe a -> a
-eliminate (Just a) = a
+
+--eliminate :: Maybe a -> a  -- does not get called anywhere
+--eliminate (Just a) = a
 
 
 checkWon :: Board -> Maybe Col
@@ -104,35 +105,42 @@ For every position ((x, y), col) in the 'pieces' list:
 - if n > 1, move one step in direction D, and check for a line of
   n-1 in a row.
 -}
-data Direction = N | E | NE
-descend :: Board -> Col -> Position -> Direction -> Int
-descend b c (x,y) dir = if isC (x,y) then  -- descend north, east, north-east
-                            (1::Int) + descend b c next dir
-                        else 0
-                        where isC :: Position -> Bool
-                              isC pos = case piece_at pos of
-                                            [] -> False
-                                            [piece_found] -> snd piece_found == c
+data Direction = N | S | E | W | NE | SE | NW | SW
+    deriving (Enum, Show)
+next :: Position -> Direction -> Position
+next (x,y) N = (x+1, y)
+next (x,y) S = (x-1, y)
+next (x,y) E = (x, y+1)
+next (x,y) W = (x, y-1)
+next (x,y) NE = (x+1, y+1)
+next (x,y) NW = (x+1, y-1)
+next (x,y) SE = (x-1, y+1)
+next (x,y) SW = (x-1, y-1)
+
+descend :: Board -> Col -> Direction -> Position -> Int
+descend b c dir (x,y) = if outOfBounds then -1  -- negatve one means that the row is blocked
+                        else if colOf (x,y) == Just (other c) then -1
+                        else if colOf (x,y) == Just c then
+                                if length == -1 then -1  -- pass-up blocked
+                                else (1::Int) + length
+                        else 0  -- empty
+                        where length = descend b c dir $ next (x,y) dir
+                              colOf :: Position -> Maybe Col
+                              colOf pos = case piece_at pos of
+                                            [] -> Nothing
+                                            [piece_found] -> Just $ snd piece_found
                               piece_at :: Position -> [(Position, Col)]
                               piece_at p = filter (\ (pos, c) -> pos == p) (pieces b)
-                              next = case dir of
-                                        N -> (x+1,y)
-                                        E -> (x,y+1)
-                                        NE -> (x+1,y+1)
+                              outOfBounds = x < 0 || y < 0 || x >= size b || y >= size b
 
-longest :: Board -> Col -> Int
-longest b c = Prelude.maximum [max nd (max ed ned) |  -- the largest of the three descensions
-                                nd <- [descend b c (x,y) N | x <- [0..size b -1], y <- [0..size b -1]],  -- descend north
-                                ed <- [descend b c (x,y) E | x <- [0..size b -1], y <- [0..size b -1]],  -- descend east
-                                ned <- [descend b c (x,y) NE | x <- [0..size b -1], y <- [0..size b -1]]  -- descend north-east
-                              ]
+longest :: Board -> Col -> Int  -- the longest when descending from every square in all directions
+longest b c = Prelude.maximum [descend b c dir (x,y) | dir <- [N ..], x <- [0..size b -1], y <- [0..size b -1]]
 
 -- An evaluation function for a minimax search. Given a board and a colour
 -- return an integer indicating how good the board is for that colour.
 evaluate :: Board -> Col -> Int
 evaluate b c = if lc == size b -1 then size b -1  -- if c can win from here = best
                else if loc == size b -1 then 1- size b  -- else if !c can win from here = worst
-               --TODO update the two ifs to acknowledge blocked rows.
-               else lc-loc-- otherwise longest c - longest !c
+               else lc-loc  -- otherwise longest c - longest !c
                where lc = longest b c
                      loc = longest b $ other c
