@@ -5,6 +5,12 @@ import Data.Foldable
 data Col = Black | White
   deriving (Show, Eq)
 
+instance Read Col where
+    readsPrec d "black" = [(Black, "")]
+    readsPrec d "Black" = [(Black, "")]
+    readsPrec d "white" = [(White, "")]
+    readsPrec d "White" = [(White, "")]
+
 other :: Col -> Col
 other Black = White
 other White = Black
@@ -21,13 +27,14 @@ type Position = (Int, Int)
 
 data Board = Board { size :: Int,
                      target :: Int,
+                     human :: Col,
                      pieces :: [(Position, Col)],
                      won :: (Maybe Col)
                    }
   deriving Show
 
 -- Default board is 6x6, target is 3 in a row, no initial pieces
-initBoard = Board 6 3 [] Nothing
+initBoard = Board 6 3 Black [] Nothing
 
 -- Overall state is the board and whose turn it is, plus any further
 -- information about the world (this may later include, for example, player
@@ -132,7 +139,10 @@ descend b c dir (x,y) = if outOfBounds then (0, True)
                               outOfBounds = x < 0 || y < 0 || x >= size b || y >= size b
 
 longest :: Board -> Col -> Int  -- the longest when descending from every square in all directions
-longest b c = Prelude.maximum [fst $ descend b c dir (x,y) | dir <- [N ..], x <- [0..size b -1], y <- [0..size b -1]]
+longest b c = Prelude.maximum $ map fst $  -- take the maximum length
+                -- take only lengths that: are not blocked OR are the target (victory)
+                filter (\ (l, bl) -> bl==False || l == target b)
+                    [descend b c dir (x,y) | dir <- [N ..], x <- [0..size b -1], y <- [0..size b -1]]
 
 -- An evaluation function for a minimax search. Given a board and a colour
 -- return an integer indicating how good the board is for that colour.

@@ -7,12 +7,12 @@ import Debug.Trace
 
 
 -- Constants
-window_width = 600::Int
-window_height = 600::Int
-wwh = - fromIntegral window_width / 2  -- window width halved
-whh = - fromIntegral window_height / 2  -- window height halved
 sq_color = black
 sq_side = 100::Float
+-- BS = Board Size
+win_size :: Int -> Int
+win_size bs = bs * (round sq_side::Int)
+wwh bs = - fromIntegral (win_size bs) / 2  -- window width halved
 
 -- Piece Color
 pc :: Col -> Color
@@ -26,12 +26,15 @@ pc White = white
 -- as a grid plus pieces.
 drawWorld :: World -> Picture
 --drawWorld w = loadBMP "img/tiger.bmp" -- Monad
-drawWorld w = Pictures [grid $ size $ board w, tiles $ pieces $ board w, winmsg (won (board w))]
+drawWorld w = Pictures [grid $ size $ board w,
+                        tiles (size $ board w) $ pieces $ board w,
+                        winmsg (size $ board w) (won (board w))
+                       ]
 
 grid :: Int -> Picture
-grid b_size = Pictures [square (x, y) |
-                               x <- [wwh, wwh+sq_side..wwh+sq_side*(fromIntegral b_size -1)],
-                               y <- [whh, whh+sq_side..whh+sq_side*(fromIntegral b_size -1)]
+grid bs = Pictures [square (x, y) |
+                               x <- [wwh bs, wwh bs+sq_side..wwh bs+sq_side*(fromIntegral bs -1)],
+                               y <- [wwh bs, wwh bs+sq_side..wwh bs+sq_side*(fromIntegral bs -1)]
                        ]
 
 -- square drawing :: starting position -> side -> picture drawn
@@ -39,16 +42,16 @@ square :: Point -> Picture
 square (x, y) = Color sq_color $ Line [(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y)]
 
 
-tiles :: [(Position, Col)] -> Picture
-tiles ts = Pictures [tile t | t <- ts]
+tiles :: Int -> [(Position, Col)] -> Picture
+tiles bs ts = Pictures [tile bs t | t <- ts]
 
-tile :: (Position, Col) -> Picture
-tile ((x, y), c) = translate xtranslation ytranslation $ Color (pc c) $ circleSolid (sq_side/2)
-                   where xtranslation = (fromIntegral x*sq_side+wwh+sq_side/2)
-                         ytranslation = (fromIntegral y*sq_side+whh+sq_side/2)
+tile :: Int -> (Position, Col) -> Picture
+tile bs ((x, y), c) = translate xtranslation ytranslation $ Color (pc c) $ circleSolid (sq_side/2)
+                      where xtranslation = (fromIntegral x*sq_side+wwh bs+sq_side/2)
+                            ytranslation = (fromIntegral y*sq_side+wwh bs+sq_side/2)
 
-winmsg :: (Maybe Col) -> Picture
-winmsg Nothing = trace ("nothing") $ Text ""
-winmsg (Just c)
-  | c == Black = trace ("black") $ translate wwh 0 $ Text "Black Wins"
-  | c == White = trace ("white") $ translate wwh 0 $ Text "White Wins"
+winmsg :: Int -> (Maybe Col) -> Picture
+winmsg bs Nothing = Text ""
+winmsg bs (Just c)
+  | c == Black = translate (wwh bs) 0 $ Text "Black Wins"
+  | c == White = translate (wwh bs) 0 $ Text "White Wins"

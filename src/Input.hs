@@ -21,8 +21,8 @@ handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
         Just b -> World b (other (turn w)) ""  -- updated world
         Nothing -> w  -- same world
         where  -- convert graphics coords to board coords
-            convx = round $ (x-wwh-sq_side/2)/sq_side
-            convy = round $ (y-whh-sq_side/2)/sq_side
+            convx = round $ (x-wwh (size $ board w)-sq_side/2)/sq_side
+            convy = round $ (y-wwh (size $ board w)-sq_side/2)/sq_side
 handleInput (EventKey (Char k) Down _ _) w
 --    = trace ("Key " ++ show k ++ " down") w
     = case k of

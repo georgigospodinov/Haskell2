@@ -60,6 +60,13 @@ evalMove b p c = case makeMove b c p of Just b' -> (evaluate b' c, p)
 
     Also, we can probably move some of the evaluation from Board.hs to AI.hs
 -}
+data Shape = Flower | Half_Flower | One_Missing
+
+-- Looks for a shape on the board by the given color and returns the position where the AI needs to play
+findShape :: Shape -> Board -> Col -> Maybe Position
+findShape Flower b c = undefined
+findShape Half_Flower b c = undefined
+findShape One_Missing b c = undefined
 
 -- Update the world state after some time has passed
 updateWorld :: Float -- ^ time since last update (you can ignore this)

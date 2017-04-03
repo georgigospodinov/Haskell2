@@ -1,6 +1,8 @@
 module Main where
 
 import Graphics.Gloss
+import System.Environment
+import Data.String.Utils
 
 import Board
 import Draw
@@ -20,20 +22,35 @@ import AI
 -- and, if it is an AI's turn, should update the board with an AI generated
 -- move
 gray = dark(dark white) -- gray is not predefined
+
+parseArgument :: String -> Board -> Board
+parseArgument str b =   if startswith "size=" str then
+                            b {size = read $ drop (length "size=") str}
+                        else if startswith "target=" str then
+                            b {target = read $ drop (length "target=") str}
+                        else if startswith "human=" str then
+                            b {human = read $ drop (length "human=") str}
+                        else if startswith "ai=" str then
+                            b {human = other $ read $ drop (length "ai=") str}
+                        else if startswith "computer=" str then
+                            b {human = other $ read $ drop (length "computer=") str}
+                        else b  -- argument not recognized
+
 main :: IO ()
-main = play
+main = do x <- getArgs
+          play
             (InWindow "Gomoku"  -- window title
-                (window_width, window_height)
+                (ws x, ws x)
                 (500, 600)  -- window starting position on screen
-            )
---            (FullScreen (1,1))  -- currently fails
+            )  --(FullScreen (1,1))  -- currently fails
             gray  -- background color
-            200
-            initWorld -- in Board.hs
+            10  -- 'updateWorld' is called 10 times per second
+            (wrld x) -- in Board.hs
             drawWorld -- in Draw.hs
             handleInput -- in Input.hs
             updateWorld -- in AI.hs
-
+            where wrld x = initWorld{board=foldr parseArgument initBoard x}
+                  ws x = win_size $ size $ board $ wrld x
 
 -- play:: Display -> Color -> Int
 -- -> world
