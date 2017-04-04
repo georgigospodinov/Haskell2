@@ -1,5 +1,6 @@
 module Board where
 
+import Graphics.Gloss
 import Data.Foldable
 
 data Col = Black | White
@@ -16,6 +17,15 @@ other Black = White
 other White = Black
 
 type Position = (Int, Int)
+
+-- Constants
+sq_border :: Color
+sq_border = black
+sq_side = 50::Float
+-- BS = Board Size
+win_size :: Int -> Int
+win_size bs = bs * (round sq_side::Int)
+wwh bs = - fromIntegral (win_size bs) / 2  -- window width halved
 
 -- A Board is a record containing the board size (a board is a square grid,
 -- n * n), the number of pieces in a row required to win, and a list
@@ -45,10 +55,18 @@ initBoard = Board 6 3 Black [] Nothing
 -- most recent moves were).
 data World = World { board :: Board,
                      turn :: Col,
-                     cmd :: String
+                     cmd :: String,
+                     blacks :: Picture,
+                     whites :: Picture
                    }
 
+pic :: World -> Col -> Picture
+pic w Black = blacks w
+pic w White = whites w
+
 initWorld = World initBoard Black ""
+            (Color black $ circleSolid (sq_side/2))
+            (Color white $ circleSolid (sq_side/2))
 
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)

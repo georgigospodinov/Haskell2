@@ -18,7 +18,7 @@ handleInput :: Event -> World -> World
 --handleInput (EventMotion (x, y)) w = trace ("Mouse moved to: " ++ show (x,y)) w
 handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
     = case makeMove (board w) (turn w) (convx, convy) of
-        Just b -> World b (other (turn w)) ""  -- updated world
+        Just b -> World b (other (turn w)) "" (blacks w) (whites w) -- updated world
         Nothing -> w  -- same world
         where  -- convert graphics coords to board coords
             convx = round $ (x-wwh (size $ board w)-sq_side/2)/sq_side

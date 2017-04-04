@@ -38,19 +38,21 @@ parseArgument str b =   if startswith "size=" str then
 
 main :: IO ()
 main = do x <- getArgs
+          white_piece <- loadBMP "src/img/white.bmp"
+          black_piece <- loadBMP "src/img/black.bmp"
           play
             (InWindow "Gomoku"  -- window title
                 (ws x, ws x)
-                (500, 600)  -- window starting position on screen
+                (100, 100)  -- window starting position on screen
             )  --(FullScreen (1,1))  -- currently fails
             gray  -- background color
             10  -- 'updateWorld' is called 10 times per second
-            (wrld x) -- in Board.hs
+            ((wrld x) {blacks=black_piece,whites=white_piece})
             drawWorld -- in Draw.hs
             handleInput -- in Input.hs
             updateWorld -- in AI.hs
-            where wrld x = initWorld{board=foldr parseArgument initBoard x}
-                  ws x = win_size $ size $ board $ wrld x
+            where ws x = win_size $ size $ board $ wrld x
+                  wrld x = initWorld {board = foldr parseArgument initBoard x}
 
 -- play:: Display -> Color -> Int
 -- -> world

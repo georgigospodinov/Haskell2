@@ -1,5 +1,7 @@
-BASIC SPECIFICATION
+For a mark of 17+ we need: Basic, All Easy, at least 3/4 Medium.
+    -https://studres.cs.st-andrews.ac.uk/CS2006/Practicals/Haskell2/Haskell2.pdf #Marking Guidelines
 
+BASIC SPECIFICATION
 
 BASIC IMPLEMENTATION
 [x] Draw Board
@@ -9,11 +11,58 @@ BASIC RULES
 [] Basic Game Specification
     [x] Black plays first
     [x] Can only place piece on empty square
-    [] Player wins when 3 in a row
+    [x] Player wins when 3 in a row
 
 BASIC AI
 [] AI.hs move generator
     [x] Generates all possible moves
 
 [] Board.hs
-    [] Decides best move
+    [] Evaluates board
+
+
+
+EXTENSIONS
+
+EASY 1
+[x] Recognize command line arguments
+
+EASY 2
+[] Implement UNDO
+
+EASY 3
+[] Implement Rule Variants
+
+MEDIUM 1
+[] In-game option setting
+    [x] Handle Input Key presses
+    [] Change World
+
+MEDIUM 2
+[] Use bitmap images instead of plain pictures
+    [x] For pieces
+    [] For board?
+
+MEDIUM 3
+[] Hints
+
+MEDIUM 4
+[] Save game
+[] Load game
+
+MEDIUM/HARD 1
+[] Time Limits
+[] "PAUSE" game
+
+MEDIUM/HARD 2
+[] Game mods (Renju, Pente)
+
+HARD 1
+[] Record games in .sgf files
+[] Replay games
+
+HARD 2
+[] AI-s with different skills/strategies
+
+HARD 3
+[] Network play
