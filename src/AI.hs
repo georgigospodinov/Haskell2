@@ -30,7 +30,7 @@ buildTree gen b c = let moves = gen b c in -- generated moves
         = case makeMove b c pos of -- try making the suggested move
                Nothing -> mkNextStates xs -- not successful, no new state
                Just b' -> (pos, buildTree gen b' (other c)) : mkNextStates xs
-                             -- successful, make move and build tree from 
+                             -- successful, make move and build tree from
                              -- here for opposite player
 
 -- Get the best next move from a (possibly infinite) game tree. This should
@@ -84,7 +84,7 @@ updateWorld t w = w
  If both players are human players, the simple version above will suffice,
  since it does nothing.
 
- In a complete implementation, 'updateWorld' should also check if either 
+ In a complete implementation, 'updateWorld' should also check if either
  player has won and display a message if so.
 -}
 
@@ -93,11 +93,29 @@ updateWorld t w = w
 
 -- need a generator that follows some rules
 
+-- Given a board will return a list of empty cells beside other cells
+besideFilledCells :: Board -> [Position]
+besideFilledCells bd = filter (isBesideFilledCell bd) (emptyCells bd)
+
+isBesideFilledCell :: Board -> Position -> Bool
+isBesideFilledCell bd cell
+                    | not (isEmptyCell bd (next cell N)) = True
+                    | not (isEmptyCell bd (next cell NE)) = True
+                    | not (isEmptyCell bd (next cell E)) = True
+                    | not (isEmptyCell bd (next cell SE)) = True
+                    | not (isEmptyCell bd (next cell S)) = True
+                    | not (isEmptyCell bd (next cell SW)) = True
+                    | not (isEmptyCell bd (next cell W)) = True
+                    | not (isEmptyCell bd (next cell NW)) = True
+                    | otherwise = False
+
 -- last resort generator, when the above generator finds nothing
-emptyCells :: Board -> Col -> [Position]
-emptyCells bd c = filter (isEmptyCell bd) boardCells
+-- Given a board will return list of positions that are empty
+emptyCells :: Board -> [Position]
+emptyCells bd = filter (isEmptyCell bd) boardCells
                   where boardCells = [(x,y) | x <- [0 .. ((size bd) - 1)], y <- [0 .. ((size bd) - 1)] ]
 
+-- Given a board and a position will check if given position is empty
 isEmptyCell :: Board -> Position -> Bool
 isEmptyCell bd cell = let cells = filter ((==cell).fst) (pieces bd)
                        in if length cells == 0 then True
