@@ -157,16 +157,18 @@ descend b c dir (x,y) = if outOfBounds then (0, True)
                               outOfBounds = x < 0 || y < 0 || x >= size b || y >= size b
 
 longest :: Board -> Col -> Int  -- the longest when descending from every square in all directions
-longest b c = Prelude.maximum $ map fst $  -- take the maximum length
+longest b c = max' $ map fst $  -- take the maximum length
                 -- take only lengths that: are not blocked OR are the target (victory)
                 filter (\ (l, bl) -> bl==False || l == target b)
                     [descend b c dir (x,y) | dir <- [N ..], x <- [0..size b -1], y <- [0..size b -1]]
+                where max' [] = 0
+                      max' xs = Prelude.maximum xs
 
 -- An evaluation function for a minimax search. Given a board and a colour
 -- return an integer indicating how good the board is for that colour.
 evaluate :: Board -> Col -> Int
-evaluate b c = if lc == size b -1 then size b -1  -- if c can win from here = best
-               else if loc == size b -1 then 1- size b  -- else if !c can win from here = worst
+evaluate b c = if lc == target b then target b  -- if c can win from here = best
+               else if loc == target b then 0- target b  -- else if !c can win from here = worst
                else lc-loc  -- otherwise longest c - longest !c
                where lc = longest b c
                      loc = longest b $ other c

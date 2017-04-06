@@ -2,6 +2,8 @@ module AI where
 
 import Board
 
+import Debug.Trace
+
 data GameTree = GameTree { game_board :: Board,
                            game_turn :: Col,
                            next_moves :: [(Position, GameTree)] }
@@ -39,19 +41,25 @@ buildTree gen b c = let moves = gen b c in -- generated moves
 -- is at the top of the game tree.
 getBestMove :: Int -- ^ Maximum search depth
                -> GameTree -- ^ Initial game tree
+               -> Col
                -> Position
-getBestMove maxdepth gt = snd $ recurse maxdepth gt
+getBestMove maxdepth gt c = snd $ recurse maxdepth gt c
 
-recurse :: Int -> GameTree -> (Int, Position)  -- takes forever...
-recurse md gt = if md == 0 then maximum val_moves
-                else maximum [(value + fst (recurse (md-1) gt), move) |
-                              (value, move) <- val_moves]
-                where next_positions = map fst $ next_moves gt
-                      val_moves = [evalMove (game_board gt) p (game_turn gt) | p <- next_positions]
+recurse :: Int -> GameTree -> Col -> (Int, Position)  -- takes forever...
+recurse md gt c = if md == 0 then
+                    if  curr_vals_movs /= [] then
+                        Prelude.maximum $ trace (show $ curr_vals_movs) curr_vals_movs
+                    else trace "something horrible has happened" (0,(0,0))
+                  else if next_vals_movs == [] then trace "something terrible has happened" (0, (0,0))
+                  else Prelude.maximum $ trace (show next_vals_movs) next_vals_movs
+                  where val_mov_nt = [(evalMove (game_board g) p c, g) | (p, g) <- next_moves gt]
+                        next_value nt = fst (recurse (md-1) nt c)
+                        curr_vals_movs = map fst val_mov_nt
+                        next_vals_movs = [(min current_value $ next_value nt, move) | ((current_value, move), nt) <- val_mov_nt]
 
 -- How good will the board be after this move? (a valid move is assumed)
 evalMove :: Board -> Position -> Col -> (Int, Position)
-evalMove b p c = case makeMove b c p of Just b' -> (evaluate b' c, p)
+evalMove b p c = (evaluate b c, p)
 {- Edwin suggested that we look for shapes when evaluating
     (BB_BB) is a great position for Black, terrible for White
     also, represent the board in a different way will likely
@@ -94,8 +102,8 @@ updateWorld t w = w
 -- need a generator that follows some rules
 
 -- Given a board will return a list of empty cells beside other cells
-besideFilledCells :: Board -> [Position]
-besideFilledCells bd = filter (isBesideFilledCell bd) (emptyCells bd)
+besideFilledCells :: Board -> Col -> [Position]
+besideFilledCells bd c = filter (isBesideFilledCell bd) (emptyCells bd)
 
 isBesideFilledCell :: Board -> Position -> Bool
 isBesideFilledCell bd cell
