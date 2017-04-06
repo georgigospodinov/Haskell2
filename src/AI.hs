@@ -60,21 +60,6 @@ recurse md gt c = if md == 0 then
 -- How good will the board be after this move? (a valid move is assumed)
 evalMove :: Board -> Position -> Col -> (Int, Position)
 evalMove b p c = (evaluate b c, p)
-{- Edwin suggested that we look for shapes when evaluating
-    (BB_BB) is a great position for Black, terrible for White
-    also, represent the board in a different way will likely
-        make it easier to implement an evaluation function
-    our current evalution takes forever because its n^2 at every node in the tree
-
-    Also, we can probably move some of the evaluation from Board.hs to AI.hs
--}
-data Shape = Flower | Half_Flower | One_Missing
-
--- Looks for a shape on the board by the given color and returns the position where the AI needs to play
-findShape :: Shape -> Board -> Col -> Maybe Position
-findShape Flower b c = undefined
-findShape Half_Flower b c = undefined
-findShape One_Missing b c = undefined
 
 -- Update the world state after some time has passed
 updateWorld :: Float -- ^ time since last update (you can ignore this)
@@ -96,10 +81,7 @@ updateWorld t w = w
  player has won and display a message if so.
 -}
 
---gen :: Board -> Col -> [Position]
---gen board colour = m
-
--- need a generator that follows some rules
+-- A generator that follows some rules?
 
 -- Given a board will return a list of empty cells beside other cells
 besideFilledCells :: Board -> Col -> [Position]

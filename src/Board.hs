@@ -73,20 +73,20 @@ initWorld = World initBoard Black ""
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)
 makeMove :: Board -> Col -> Position -> Maybe Board
-makeMove b c (x,y) =  if won b /= Nothing then Nothing  -- Do not accept new moves, once there is a winner.
+makeMove b c (x,y) =  if outOfBounds then Nothing
+                      else if won b /= Nothing then Nothing  -- Do not accept new moves, once there is a winner.
                       else if ((lookup (x,y) (pieces b)) == Nothing)
                             then Just b'{won = checkWon b'}  -- Update winner after pieces.
                            else Nothing
                             where b' = b{pieces = pieces b++[((x,y),c)]}  -- Update pieces first.
-
--- Check whether the board is in a winning state for either player.
--- Returns 'Nothing' if neither player has won yet
--- Returns 'Just c' if the player 'c' has won
+                                  outOfBounds = x < 0 || y < 0 || x >= size b-1 || y >= size b-1
 
 --eliminate :: Maybe a -> a  -- does not get called anywhere
 --eliminate (Just a) = a
 
-
+-- Check whether the board is in a winning state for either player.
+-- Returns 'Nothing' if neither player has won yet
+-- Returns 'Just c' if the player 'c' has won
 checkWon :: Board -> Maybe Col
 --checkWon b = checkAllPos b  -- Does not seem to detect properly.
 checkWon b = if longest b Black == target b then Just Black
@@ -174,8 +174,3 @@ evaluate b c = if lc == target b then target b  -- if c can win from here = best
                else lc-loc  -- otherwise longest c - longest !c
                where lc = longest b c
                      loc = longest b $ other c
-
-data PreviousStates = PreviousStates {former_worlds :: [World]}
-
-undo :: World -> Maybe World
-undo wd1 = prev wd1

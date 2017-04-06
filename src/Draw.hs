@@ -35,8 +35,8 @@ tiles w = Pictures [tile w t | t <- pieces $ board w]
 
 tile :: World -> (Position, Col) -> Picture
 tile w ((x, y), c) = translate xtranslation ytranslation $ pic w c
-                     where xtranslation = (fromIntegral x*sq_side+wwh bs+sq_side/2)
-                           ytranslation = (fromIntegral y*sq_side+wwh bs+sq_side/2)
+                     where xtranslation = (fromIntegral x*sq_side+wwh bs+sq_side)
+                           ytranslation = (fromIntegral y*sq_side+wwh bs+sq_side)
                            bs = size $ board w
 
 winmsg :: Int -> (Maybe Col) -> Picture
