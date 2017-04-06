@@ -39,12 +39,13 @@ data Board = Board { size :: Int,
                      target :: Int,
                      human :: Col,
                      pieces :: [(Position, Col)],
-                     won :: (Maybe Col)
+                     won :: (Maybe Col),
+                     fair :: Bool
                    }
   deriving Show
 
 -- Default board is 6x6, target is 3 in a row, no initial pieces
-initBoard = Board 6 3 Black [] Nothing
+initBoard = Board 6 3 Black [] Nothing False
 
 -- Overall state is the board and whose turn it is, plus any further
 -- information about the world (this may later include, for example, player
@@ -73,13 +74,14 @@ initWorld = World initBoard Black ""
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)
 makeMove :: Board -> Col -> Position -> Maybe Board
-makeMove b c (x,y) =  if outOfBounds then Nothing
+makeMove b c (x,y) =  if outOfBounds || invalid then Nothing
                       else if won b /= Nothing then Nothing  -- Do not accept new moves, once there is a winner.
                       else if ((lookup (x,y) (pieces b)) == Nothing)
                             then Just b'{won = checkWon b'}  -- Update winner after pieces.
                            else Nothing
                             where b' = b{pieces = pieces b++[((x,y),c)]}  -- Update pieces first.
                                   outOfBounds = x < 0 || y < 0 || x >= size b-1 || y >= size b-1
+                                  invalid = not (checkRules b')
 
 --eliminate :: Maybe a -> a  -- does not get called anywhere
 --eliminate (Just a) = a
@@ -88,38 +90,28 @@ makeMove b c (x,y) =  if outOfBounds then Nothing
 -- Returns 'Nothing' if neither player has won yet
 -- Returns 'Just c' if the player 'c' has won
 checkWon :: Board -> Maybe Col
---checkWon b = checkAllPos b  -- Does not seem to detect properly.
 checkWon b = if longest b Black == target b then Just Black
              else if longest b White == target b then Just White
              else Nothing
 
-checkAllPos :: Board -> Maybe Col
-checkAllPos board =
-  case ls of
-    []  -> Nothing
-    [c] -> Just c
-    --_   -> throw "sth wrogngngns"
-    where ls = map woJ (filter js (map f (pieces board)))
-          js x  = x /= Nothing
-          woJ (Just x) = x
-          f e = if (checkPos (fst e) (pieces board) "e" (snd e)) == target board
-            then Just (snd e)
-            else Nothing
+-- returns true if ok, false if rule is broken
+checkRules :: Board -> Bool
+checkRules b = if (fair b) then (check3and3 b Black 3) && (check4and4 b Black 4)
+               else (check3and3 b Black 3) && (check3and3 b White 3) && (check4and4 b Black 4) && (check4and4 b White 4)
 
-checkPos :: Position -> [(Position, Col)] -> String -> Col -> Int
-checkPos lstPos []  d c = 0
-checkPos lstPos xs  d c = case d of
-                            "nw" -> 0
-                            "n"  -> 0
-                            "ne" -> 0
-                            "e"  ->
-                              if (lookup newPos xs) == Just c
-                                then 1 + checkPos newPos xs d c
-                                else 1
-                                where newPos = ((fst lstPos) + 1, (snd lstPos))
-                            "w"  -> 0
-                            "se" -> 0
-                            "sw" -> 0
+-- returns true if ok, false if rule is broken
+check4and4 :: Board -> Col -> Int -> Bool
+check4and4 b c i = num_rows_of_4 < 2
+                where num_rows_of_4 = sum ( all_rows_of_4 )
+                      all_rows_of_4 = map (\p -> length (rows_of_4 p) ) (pieces b)
+                      rows_of_4 piece = filter (\ x -> ( (fst x) == i ) ) ( map ( \d -> descend b c d (fst piece) ) [N, NE, E, SE] )
+
+-- returns true if ok, false if rule is broken
+check3and3 :: Board -> Col -> Int -> Bool
+check3and3 b c i = num_all_u_i_rows < 2
+                where num_all_u_i_rows = sum $ all_unblock_i_rows
+                      all_unblock_i_rows = map (\p -> length (unblock_i_rows p) ) (pieces b)
+                      unblock_i_rows piece = filter (\ x -> ( (fst x) == i ) && not (snd x) ) ( map ( \d -> descend b c d (fst piece) ) [N, NE, E, SE] )
 
 {- Hint: One way to implement 'checkWon' would be to write functions
 which specifically check for lines in all 8 possible directions

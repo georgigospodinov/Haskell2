@@ -28,6 +28,8 @@ parseArgument str b =   if startswith "size=" str then
                             b {size = read $ drop (length "size=") str}
                         else if startswith "target=" str then
                             b {target = read $ drop (length "target=") str}
+                        else if startswith "fair=" str then
+                            b {fair = read $ drop (length "fair=") str}
                         else if startswith "human=" str then
                             b {human = read $ drop (length "human=") str}
                         else if startswith "ai=" str then
