@@ -172,3 +172,10 @@ evaluate b c = if lc == target b then target b  -- if c can win from here = best
                else lc-loc  -- otherwise longest c - longest !c
                where lc = longest b c
                      loc = longest b $ other c
+
+data PreviousStates = PreviousStates {former_boards :: [Board]}
+
+undo :: PreviousStates -> (Board, PreviousStates)
+undo ps = (bd, ps2)
+            where bd = last (former_boards ps)
+                  ps2 = PreviousStates (init (former_boards ps))
