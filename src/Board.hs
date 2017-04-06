@@ -57,7 +57,8 @@ data World = World { board :: Board,
                      turn :: Col,
                      cmd :: String,
                      blacks :: Picture,
-                     whites :: Picture
+                     whites :: Picture,
+                     prev :: Maybe World
                    }
 
 pic :: World -> Col -> Picture
@@ -67,6 +68,7 @@ pic w White = whites w
 initWorld = World initBoard Black ""
             (Color black $ circleSolid (sq_side/2))
             (Color white $ circleSolid (sq_side/2))
+            Nothing
 
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)
@@ -175,10 +177,5 @@ evaluate b c = if lc == target b then target b  -- if c can win from here = best
 
 data PreviousStates = PreviousStates {former_worlds :: [World]}
 
-undo :: PreviousStates -> (World, PreviousStates)
-undo ps = (wd, ps2)
-            where wd = last (former_worlds ps)
-                  ps2 = PreviousStates (init (former_worlds ps))
-
-addState :: PreviousStates -> World -> PreviousStates
-addState ps wd = PreviousStates ((former_worlds ps) ++ [wd])
+undo :: World -> Maybe World
+undo wd1 = prev wd1

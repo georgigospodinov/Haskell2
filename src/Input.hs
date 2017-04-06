@@ -18,7 +18,7 @@ handleInput :: Event -> World -> World
 --handleInput (EventMotion (x, y)) w = trace ("Mouse moved to: " ++ show (x,y)) w
 handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
     = case makeMove (board w) (turn w) (convx, convy) of
-        Just b -> World b (other (turn w)) "" (blacks w) (whites w) -- updated world
+        Just b -> World b (other (turn w)) "" (blacks w) (whites w) (Just w) -- updated world
         Nothing -> w  -- same world
         where  -- convert graphics coords to board coords
             convx = round $ (x-wwh (size $ board w)-sq_side/2)/sq_side
@@ -28,7 +28,9 @@ handleInput (EventKey (Char k) Down _ _) w
     = case k of
         '.'     -> trace ("cmd: ") $ w {cmd=""}  -- clear command
         '\b'    -> trace ("cmd: " ++ del) $ w{cmd=del}
-        '\SUB'  -> trace ("UNDO not yet implemented") w
+        '\SUB'  -> case undo w of
+                        Nothing -> w
+                        Just w' -> w'
         _       -> trace ("cmd: " ++ app) $ w {cmd=app}
         where
             app = cmd w ++ [k]  -- append character
