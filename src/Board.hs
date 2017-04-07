@@ -75,16 +75,19 @@ initWorld = World initBoard Black ""
             Nothing
               where (x,y) = (50,50)
 
+
+outOfBounds :: Board -> Position -> Bool
+outOfBounds b (x,y) = x < 0 || y < 0 || x >= size b || y >= size b
+
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)
 makeMove :: Board -> Col -> Position -> Maybe Board
-makeMove b c (x,y) =  if outOfBounds || invalid then Nothing
+makeMove b c (x,y) =  if outOfBounds b (x, y)|| invalid then Nothing
                       else if won b /= Nothing then Nothing  -- Do not accept new moves, once there is a winner.
-                      else if ((lookup (x,y) (pieces b)) == Nothing)
-                            then Just b'{won = checkWon b'}  -- Update winner after pieces.
-                           else Nothing
+                      else if colOf b (x,y) == Nothing then
+                        Just b'{won = checkWon b'}  -- Update winner after pieces.
+                      else Nothing
                             where b' = b{pieces = pieces b++[((x,y),c)]}  -- Update pieces first.
-                                  outOfBounds = x < 0 || y < 0 || x >= size b-1 || y >= size b-1
                                   invalid = not (checkRules b')
 
 --eliminate :: Maybe a -> a
@@ -140,33 +143,51 @@ next (x,y) NW = (x+1, y-1)
 next (x,y) SE = (x-1, y+1)
 next (x,y) SW = (x-1, y-1)
 
+opposite :: Direction -> Direction
+opposite N = S
+opposite S = N
+opposite W = E
+opposite E = W
+opposite NE = SW
+opposite NW = SE
+opposite SE = NW
+opposite SW = NE
+opp = opposite
+
+colOf :: Board -> Position -> Maybe Col
+colOf b pos = lookup pos (pieces b)
+
 descend :: Board -> Col -> Direction -> Position -> (Int, Bool)  -- length, (blocked?)
-descend b c dir (x,y) = if outOfBounds then (0, True)
-                        else if colOf (x,y) == Just (other c) then (0, True)
-                        else if colOf (x,y) == Just c then (l+1, bl)
+descend b c dir (x,y) = if outOfBounds b (x,y) then (0, True)
+                        else if colOf b (x,y) == Just (other c) then (0, True)
+                        else if colOf b (x,y) == Just c then (l+1, bl)
                         else (0, False)  -- empty
                         where (l, bl) = descend b c dir $ next (x,y) dir
-                              colOf :: Position -> Maybe Col
-                              colOf pos = case piece_at pos of
-                                            [] -> Nothing
-                                            [piece_found] -> Just $ snd piece_found
-                              piece_at :: Position -> [(Position, Col)]
-                              piece_at p = filter (\ (pos, c) -> pos == p) (pieces b)
-                              outOfBounds = x < 0 || y < 0 || x >= size b || y >= size b
+
 
 longest :: Board -> Col -> Int  -- the longest when descending from every square in all directions
 longest b c = max' $ map fst $  -- take the maximum length
                 -- take only lengths that: are not blocked OR are the target (victory)
                 filter (\ (l, bl) -> bl==False || l == target b)
-                    [descend b c dir (x,y) | dir <- [N ..], x <- [0..size b -1], y <- [0..size b -1]]
+                    [if copp (x,y) dir /= Just c then descend b c dir (x,y)
+                     -- The previous piece must not be of the same color
+                     else (-target b -1, True)  -- if it is, ignore it
+                     | dir <- [N ..], (x, y) <- map fst $ pieces b]
                 where max' [] = 0
                       max' xs = Prelude.maximum xs
+                      copp p d = colOf b $ next p (opp d)
 
 -- An evaluation function for a minimax search. Given a board and a colour
 -- return an integer indicating how good the board is for that colour.
+--evaluate :: Board -> Col -> Int
+--evaluate b c = if lc == target b then target b  -- if c can win from here = best
+--               else if loc == target b then 0- target b  -- else if !c can win from here = worst
+--               else lc-loc  -- otherwise longest c - longest !c
+--               where lc = longest b c
+--                     loc = longest b $ other c
+
+
 evaluate :: Board -> Col -> Int
-evaluate b c = if lc == target b then target b  -- if c can win from here = best
-               else if loc == target b then 0- target b  -- else if !c can win from here = worst
-               else lc-loc  -- otherwise longest c - longest !c
-               where lc = longest b c
-                     loc = longest b $ other c
+evaluate b c = if won b == Nothing then 1--longest b c
+               else if won b == Just c then target b
+               else -target b

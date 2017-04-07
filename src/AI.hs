@@ -3,6 +3,7 @@ module AI where
 import Board
 
 import Debug.Trace
+import Data.List
 
 data GameTree = GameTree { game_board :: Board,
                            game_turn :: Col,
@@ -45,27 +46,55 @@ getBestMove :: Int -- ^ Maximum search depth
                -> Position
 getBestMove maxdepth gt c = snd $ recurse maxdepth gt c
 
-recurse :: Int -> GameTree -> Col -> (Int, Position)  -- takes forever...
-recurse md gt c = if md == 0 then
-                    if  curr_vals_movs /= [] then
-                        Prelude.maximum $ trace (show $ curr_vals_movs) curr_vals_movs
-                    else trace "something horrible has happened" (0,(0,0))
-                  else if next_vals_movs == [] then trace "something terrible has happened" (0, (0,0))
-                  else Prelude.maximum $ trace (show next_vals_movs) next_vals_movs
-                  where val_mov_nt = [(evalMove (game_board g) p c, g) | (p, g) <- next_moves gt]
-                        next_value nt = fst (recurse (md-1) nt c)
-                        curr_vals_movs = map fst val_mov_nt
-                        next_vals_movs = [(min current_value $ next_value nt, move) | ((current_value, move), nt) <- val_mov_nt]
+recurse :: Int -> GameTree -> Col -> (Int, Position)
+recurse 0 gt c = best [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
+recurse d gt c = if (d `div` 2)* 2 == d then best options  -- ai plays on even depth
+                 else if (fst $ best options) == (target $ game_board gt) then best options  -- if a winning move is found
+                 else worst options  -- assumes the opponent's move will be the worst (for it) option
+                 where curr_values :: [(Int, Position)]  -- resultt of evaluating every possible board
+                       curr_values = [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
+                       next_values :: [(Int, Position)]  -- result of recursing down every node
+                       next_values = [recurse (d-1) nt c | (p, nt) <- next_moves gt]
+                       options :: [(Int, Position)]  -- taking the lower of the sub-tree and the current node
+                       options = [(min' cv nv, p) | ((nv, _),(cv, p)) <- zip next_values curr_values]
+                       min' a b = if a == (target $ game_board gt) then a  -- if a means winning, then a
+                                  else min a b  -- else, the lower of the two
+                       -- this way it will detect if a move will eventually lead to a loss
 
--- How good will the board be after this move? (a valid move is assumed)
-evalMove :: Board -> Position -> Col -> (Int, Position)
-evalMove b p c = (evaluate b c, p)
+worst :: [(Int, Position)] -> (Int, Position)
+worst [] = trace "worst:NO MOVES???" (0, (0,0))
+worst [x] = trace "worst:One move??" x
+worst ips = foldr comp2 (head ips) (tail ips)
+
+comp2 :: (Int, Position) -> (Int, Position) -> (Int, Position)
+comp2 (i1, p1) (i2, p2) = if i1 < i2 then (i1, p1)
+                          else (i2, p2)
+
+best :: [(Int, Position)] -> (Int, Position)
+best [] = trace "best:NO MOVES???" (0, (0,0))
+best [x] = trace "best:One move??" x
+best ips = foldr comp (head ips) (tail ips)  -- do a comparison, starting from the head and continuing with the tail
+
+comp :: (Int, Position) -> (Int, Position) -> (Int, Position)
+comp (i1, p1) (i2, p2) = if i1 > i2 then (i1, p1)
+                         else (i2, p2)
 
 -- Update the world state after some time has passed
 updateWorld :: Float -- ^ time since last update (you can ignore this)
             -> World -- ^ current world state
             -> World
-updateWorld t w = w
+--updateWorld t w = w
+updateWorld t w = if turn w == c then  -- if the ai is supposed to take turn
+                    w {board = case makeMove b c move  of
+                                Just b'-> b'
+                                Nothing -> trace ("failed to make move:"++show move) $ board w,
+                        turn = human b, prev = Just w}
+                  else w -- otherwise do no change
+                    where b = board w
+                          c = other $ human b
+                          gt = buildTree besideFilledCells b c
+                          turnsToThinkAhead = 1  -- drastic slow down at 3, fast at 1
+                          move = getBestMove turnsToThinkAhead gt c
 
 {- Hint: 'updateWorld' is where the AI gets called. If the world state
  indicates that it is a computer player's turn, updateWorld should use
@@ -83,9 +112,16 @@ updateWorld t w = w
 
 -- A generator that follows some rules?
 
+-- All the generators generate much more cells as the game goes on
+-- So, the AI slows down with every turn
+-- currently 'evaluate' is of constant complexity to test the generators
+
 -- Given a board will return a list of empty cells beside other cells
 besideFilledCells :: Board -> Col -> [Position]
-besideFilledCells bd c = filter (isBesideFilledCell bd) (emptyCells bd)
+besideFilledCells bd c = removeDuplicates list_of_all
+                         where list_of_all = foldr (++) [] lists  -- concatenate all lists
+                               lists = [emptyNeighbors bd p | (p, _) <- pieces bd]
+                               -- list of lists of empty neighbors for each piece
 
 isBesideFilledCell :: Board -> Position -> Bool
 isBesideFilledCell bd cell
@@ -100,13 +136,23 @@ isBesideFilledCell bd cell
                     | otherwise = False
 
 -- last resort generator, when the above generator finds nothing
--- Given a board will return list of positions that are empty
+-- Given a board will return list of positions that are empty  -- very slow for large boards
 emptyCells :: Board -> [Position]
 emptyCells bd = filter (isEmptyCell bd) boardCells
                   where boardCells = [(x,y) | x <- [0 .. ((size bd) - 1)], y <- [0 .. ((size bd) - 1)] ]
 
 -- Given a board and a position will check if given position is empty
 isEmptyCell :: Board -> Position -> Bool
-isEmptyCell bd cell = let cells = filter ((==cell).fst) (pieces bd)
-                       in if length cells == 0 then True
-                       else False
+isEmptyCell bd cell = colOf bd cell == Nothing
+
+emptyNeighbors :: Board -> Position -> [Position]
+emptyNeighbors b pos = filter (isEmptyCell b) $ neighbors b pos
+
+neighbors :: Board -> Position -> [Position]
+neighbors b pos = filter (\ p -> outOfBounds b p == False) [next pos dir | dir <- [N ..]]
+
+removeDuplicates :: [Position] -> [Position]
+removeDuplicates [] = []
+removeDuplicates (x:xs) | x `elem` xs = removeDuplicates xs
+                        -- for every element, if it is present in the remaining elements, ignore it
+                        | otherwise = x : removeDuplicates xs
