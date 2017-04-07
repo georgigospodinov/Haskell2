@@ -42,6 +42,7 @@ main :: IO ()
 main = do x <- getArgs
           white_piece <- loadBMP "src/img/white.bmp"
           black_piece <- loadBMP "src/img/black.bmp"
+          cell_pic <- loadBMP "src/img/gomoku-part.bmp"
           play
             (InWindow "Gomoku"  -- window title
                 (ws x, ws x)
@@ -49,7 +50,7 @@ main = do x <- getArgs
             )  --(FullScreen (1,1))  -- currently fails
             gray  -- background color
             10  -- 'updateWorld' is called 10 times per second
-            ((wrld x) {blacks=black_piece,whites=white_piece})
+            ((wrld x) {blacks=black_piece,whites=white_piece,cell=cell_pic})
             drawWorld -- in Draw.hs
             handleInput -- in Input.hs
             updateWorld -- in AI.hs

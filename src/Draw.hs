@@ -11,23 +11,25 @@ import Debug.Trace
 -- This will need to extract the Board from the world state and draw it
 -- as a grid plus pieces.
 drawWorld :: World -> Picture
-drawWorld w = Pictures [grid $ board w,
-                        tiles w,
-                        winmsg (size $ board w) (won (board w))
-                       ]
+drawWorld w = if (won $ board w) /= Nothing
+                then Pictures [winmsg (size $ board w) (won (board w))]
+              else Pictures [grid w,
+                            tiles w
+                            ]
 
-grid :: Board -> Picture
-grid b = Pictures [square (x, y) |
+grid :: World -> Picture
+grid w = Pictures [square (x, y) w |
                         x <- [wwh bs, wwh bs+sq_side..wwh bs+sq_side*(fromIntegral bs -1)],
                         y <- [wwh bs, wwh bs+sq_side..wwh bs+sq_side*(fromIntegral bs -1)]
                   ]
-                  where bs = size b
+                  where bs = size $ board w
 
 
 -- square drawing :: starting position -> side -> picture drawn
-square :: Point -> Picture
-square (x, y) = Color sq_border $ Line
-                    [(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y), (x,y)]
+square :: Point -> World -> Picture
+square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
+                --Color sq_border $ Line
+                --    [(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y), (x,y)]
 
 
 tiles :: World -> Picture

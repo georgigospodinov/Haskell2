@@ -59,6 +59,7 @@ data World = World { board :: Board,
                      cmd :: String,
                      blacks :: Picture,
                      whites :: Picture,
+                     cell :: Picture,
                      prev :: Maybe World
                    }
 
@@ -69,7 +70,10 @@ pic w White = whites w
 initWorld = World initBoard Black ""
             (Color black $ circleSolid (sq_side/2))
             (Color white $ circleSolid (sq_side/2))
+            (Color sq_border $ Line
+                [(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y), (x,y)])
             Nothing
+              where (x,y) = (50,50)
 
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)
@@ -83,7 +87,7 @@ makeMove b c (x,y) =  if outOfBounds || invalid then Nothing
                                   outOfBounds = x < 0 || y < 0 || x >= size b-1 || y >= size b-1
                                   invalid = not (checkRules b')
 
---eliminate :: Maybe a -> a  -- does not get called anywhere
+--eliminate :: Maybe a -> a
 --eliminate (Just a) = a
 
 -- Check whether the board is in a winning state for either player.
