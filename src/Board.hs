@@ -102,14 +102,14 @@ checkRules b = if (fair b) then (check3and3 b Black 3) && (check4and4 b Black 4)
 -- returns true if ok, false if rule is broken
 check4and4 :: Board -> Col -> Int -> Bool
 check4and4 b c i = num_rows_of_4 < 2
-                where num_rows_of_4 = sum ( all_rows_of_4 )
+                where num_rows_of_4 = Prelude.sum ( all_rows_of_4 )
                       all_rows_of_4 = map (\p -> length (rows_of_4 p) ) (pieces b)
                       rows_of_4 piece = filter (\ x -> ( (fst x) == i ) ) ( map ( \d -> descend b c d (fst piece) ) [N, NE, E, SE] )
 
 -- returns true if ok, false if rule is broken
 check3and3 :: Board -> Col -> Int -> Bool
 check3and3 b c i = num_all_u_i_rows < 2
-                where num_all_u_i_rows = sum $ all_unblock_i_rows
+                where num_all_u_i_rows = Prelude.sum $ all_unblock_i_rows
                       all_unblock_i_rows = map (\p -> length (unblock_i_rows p) ) (pieces b)
                       unblock_i_rows piece = filter (\ x -> ( (fst x) == i ) && not (snd x) ) ( map ( \d -> descend b c d (fst piece) ) [N, NE, E, SE] )
 
