@@ -31,6 +31,10 @@ handleInput (EventKey (Char k) Down _ _) w
         '\SUB'  -> case prev w of
                         Nothing -> w
                         Just w' -> w'
+        '\DC3'  -> wd
+                   where
+                     x = save "save.dat" w
+                     wd = w
         _       -> trace ("cmd: " ++ app) $ w {cmd=app}
         where
             app = cmd w ++ [k]  -- append character

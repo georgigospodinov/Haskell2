@@ -1,10 +1,16 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Board where
 
 import Graphics.Gloss
 import Data.Foldable
 
+import Data.Serialize
+import Data.ByteString (writeFile, readFile)
+import GHC.Generics
+
 data Col = Black | White
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
 
 instance Read Col where
     readsPrec d "black" = [(Black, "")]
@@ -42,7 +48,7 @@ data Board = Board { size :: Int,
                      won :: (Maybe Col),
                      fair :: Bool
                    }
-  deriving Show
+  deriving (Show, Generic)
 
 -- Default board is 6x6, target is 3 in a row, no initial pieces
 initBoard = Board 6 3 Black [] Nothing False
@@ -62,6 +68,7 @@ data World = World { board :: Board,
                      cell :: Picture,
                      prev :: Maybe World
                    }
+    deriving (Generic)
 
 pic :: World -> Col -> Picture
 pic w Black = blacks w
@@ -191,3 +198,14 @@ evaluate :: Board -> Col -> Int
 evaluate b c = if won b == Nothing then 1--longest b c
                else if won b == Just c then target b
                else -target b
+
+instance Serialize Board
+instance Serialize Col
+
+save :: FilePath -> World -> IO ()
+save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
+                 return ()
+
+load:: FilePath -> IO (Either String Board)
+load pth = do serBoard <- Data.ByteString.readFile pth
+              return (decode serBoard)
