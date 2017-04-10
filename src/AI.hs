@@ -57,7 +57,8 @@ recurse d gt c = if (d `div` 2)* 2 == d then best options  -- ai plays on even d
                        next_values = [recurse (d-1) nt c | (p, nt) <- next_moves gt]
                        options :: [(Int, Position)]  -- taking the lower of the sub-tree and the current node
                        options = [(min' cv nv, p) | ((nv, _),(cv, p)) <- zip next_values curr_values]
-                       min' a b = if a == (target $ game_board gt) then a  -- if a means winning, then a
+                       min' a b = if a == 0- (target $ game_board gt) then a  -- if the game is already lost, it cannot get better
+                                  else if a == (target $ game_board gt) then a  -- if a means winning, then a
                                   else min a b  -- else, the lower of the two
                        -- this way it will detect if a move will eventually lead to a loss
 
@@ -83,18 +84,23 @@ comp (i1, p1) (i2, p2) = if i1 > i2 then (i1, p1)
 updateWorld :: Float -- ^ time since last update (you can ignore this)
             -> World -- ^ current world state
             -> World
---updateWorld t w = w
-updateWorld t w = if turn w == c then  -- if the ai is supposed to take turn
-                    w {board = case makeMove b c move  of
-                                Just b'-> b'
-                                Nothing -> trace ("failed to make move:"++show move) $ board w,
-                        turn = human b, prev = Just w}
-                  else w -- otherwise do no change
-                    where b = board w
-                          c = other $ human b
-                          gt = buildTree besideFilledCells b c
-                          turnsToThinkAhead = 1  -- drastic slow down at 3, fast at 1
-                          move = getBestMove turnsToThinkAhead gt c
+updateWorld t w = if not $ checked w then  -- check winner
+                     w {board = (board w) {won = checkWon (board w)},
+                        checked = True}
+                  else (aiturn w) {checked = False}  -- otherwise the ai takes turn
+
+aiturn :: World -> World
+aiturn w = if turn w == c then  -- if the ai is supposed to take turn
+              w {board = case makeMove b c move  of
+                              Just b'-> b'
+                              Nothing -> trace ("failed to make move:"++show move) $ board w,
+                 turn = human b, prev = Just w}
+           else w -- otherwise do no change
+           where b = board w
+                 c = other $ human b
+                 gt = buildTree besideFilledCells b c
+                 turnsToThinkAhead = 1  -- drastic slow down at 3, fast at 1
+                 move = getBestMove turnsToThinkAhead gt c
 
 {- Hint: 'updateWorld' is where the AI gets called. If the world state
  indicates that it is a computer player's turn, updateWorld should use

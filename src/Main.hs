@@ -43,17 +43,19 @@ main = do x <- getArgs
           white_piece <- loadBMP "src/img/white.bmp"
           black_piece <- loadBMP "src/img/black.bmp"
           cell_pic <- loadBMP "src/img/gomoku-part.bmp"
+          putStrLn "HERE1"
           play
             (InWindow "Gomoku"  -- window title
                 (ws x, ws x)
                 (100, 100)  -- window starting position on screen
             )  --(FullScreen (1,1))  -- currently fails
             gray  -- background color
-            10  -- 'updateWorld' is called 10 times per second
+            2  -- 'updateWorld' is called 2 times per second
             ((wrld x) {blacks=black_piece,whites=white_piece,cell=cell_pic})
             drawWorld -- in Draw.hs
             handleInput -- in Input.hs
             updateWorld -- in AI.hs
+          putStrLn "HERE2"
             where ws x = win_size $ size $ board $ wrld x
                   wrld x = initWorld {board = foldr parseArgument initBoard x}
 

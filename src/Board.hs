@@ -4,7 +4,6 @@ module Board where
 
 import Graphics.Gloss
 import Data.Foldable
-
 import Data.Serialize
 import Data.ByteString (writeFile, readFile)
 import GHC.Generics
@@ -66,9 +65,10 @@ data World = World { board :: Board,
                      blacks :: Picture,
                      whites :: Picture,
                      cell :: Picture,
+                     checked :: Bool,
                      prev :: Maybe World
                    }
-    deriving (Generic)
+    deriving (Show, Generic)
 
 pic :: World -> Col -> Picture
 pic w Black = blacks w
@@ -79,12 +79,13 @@ initWorld = World initBoard Black ""
             (Color white $ circleSolid (sq_side/2))
             (Color sq_border $ Line
                 [(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y), (x,y)])
+            False
             Nothing
               where (x,y) = (50,50)
 
 
 outOfBounds :: Board -> Position -> Bool
-outOfBounds b (x,y) = x < 0 || y < 0 || x >= size b || y >= size b
+outOfBounds b (x,y) = x < 0 || y < 0 || x >= size b -1 || y >= size b -1
 
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)
@@ -92,7 +93,7 @@ makeMove :: Board -> Col -> Position -> Maybe Board
 makeMove b c (x,y) =  if outOfBounds b (x, y)|| invalid then Nothing
                       else if won b /= Nothing then Nothing  -- Do not accept new moves, once there is a winner.
                       else if colOf b (x,y) == Nothing then
-                        Just b'{won = checkWon b'}  -- Update winner after pieces.
+                        Just b'--{won = checkWon b'}  -- Update winner after pieces.
                       else Nothing
                             where b' = b{pieces = pieces b++[((x,y),c)]}  -- Update pieces first.
                                   invalid = not (checkRules b')
@@ -186,25 +187,17 @@ longest b c = max' $ map fst $  -- take the maximum length
 
 -- An evaluation function for a minimax search. Given a board and a colour
 -- return an integer indicating how good the board is for that colour.
---evaluate :: Board -> Col -> Int
---evaluate b c = if lc == target b then target b  -- if c can win from here = best
---               else if loc == target b then 0- target b  -- else if !c can win from here = worst
---               else lc-loc  -- otherwise longest c - longest !c
---               where lc = longest b c
---                     loc = longest b $ other c
-
-
 evaluate :: Board -> Col -> Int
-evaluate b c = if won b == Nothing then 1--longest b c
-               else if won b == Just c then target b
-               else -target b
+evaluate b c = longest b c
 
+-- can not be derived
+--instance Serialize World
 instance Serialize Board
 instance Serialize Col
 
-save :: FilePath -> World -> IO ()
+save :: FilePath -> World -> IO World
 save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
-                 return ()
+                 return wd
 
 load:: FilePath -> IO (Either String Board)
 load pth = do serBoard <- Data.ByteString.readFile pth

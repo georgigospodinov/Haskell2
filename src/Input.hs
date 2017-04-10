@@ -18,7 +18,7 @@ handleInput :: Event -> World -> World
 --handleInput (EventMotion (x, y)) w = trace ("Mouse moved to: " ++ show (x,y)) w
 handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
     = case makeMove (board w) (turn w) (convx, convy) of
-        Just b -> World b (other (turn w)) "" (blacks w) (whites w) (cell w) (Just w) -- updated world
+        Just b -> World b (other (turn w)) "" (blacks w) (whites w) (cell w) False (Just w) -- updated world
         Nothing -> w  -- same world
         where  -- convert graphics coords to board coords
             convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side
@@ -31,10 +31,8 @@ handleInput (EventKey (Char k) Down _ _) w
         '\SUB'  -> case prev w of
                         Nothing -> w
                         Just w' -> w'
-        '\DC3'  -> wd
-                   where
-                     x = save "save.dat" w
-                     wd = w
+--        '\DC3'  -> case save "save.dat" w of
+--                    IO wd -> wd  -- sad monad
         _       -> trace ("cmd: " ++ app) $ w {cmd=app}
         where
             app = cmd w ++ [k]  -- append character
