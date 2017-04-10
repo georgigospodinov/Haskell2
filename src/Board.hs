@@ -81,7 +81,7 @@ initWorld = World initBoard Black ""
                 [(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y), (x,y)])
             False
             Nothing
-              where (x,y) = (50,50)
+              where (x,y) = (-sq_side/2,-sq_side/2)
 
 
 outOfBounds :: Board -> Position -> Bool
@@ -192,14 +192,14 @@ evaluate b c = longest b c
 
 -- can not be derived
 --instance Serialize World
--- instance Serialize Board
--- instance Serialize Col
---
--- save :: FilePath -> World -> IO ()
--- save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
---                  return ()
---
---
--- load:: FilePath -> IO (Either String Board)
--- load pth = do serBoard <- Data.ByteString.readFile pth
---               return (decode serBoard)
+instance Serialize Board
+instance Serialize Col
+
+save :: FilePath -> World -> IO World
+save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
+                 return wd
+
+
+load:: FilePath -> IO (Either String Board)
+load pth = do serBoard <- Data.ByteString.readFile pth
+              return (decode serBoard)

@@ -2,6 +2,9 @@ module Input(handleInput) where
 
 import Graphics.Gloss.Interface.Pure.Game
 import Graphics.Gloss
+import System.IO.Unsafe
+import Data.Either.Unwrap
+
 import Board
 import AI
 import Draw
@@ -33,9 +36,10 @@ handleInput (EventKey (Char k) Down _ _) w
                         Just w' -> case prev w' of
                                         Nothing -> w'
                                         Just w'' -> w''
-        -- '\DC3'  -> do
-        --             x <- save "save.dat" wd
-        --             return w
+        '\DC3'  -> trace "Game Saved!" $ unsafeDupablePerformIO $ save "save.dat" w
+        '\f'    -> if isRight $ b then trace "Game Loaded!" $ w {board=fromRight b}
+                   else trace (fromLeft b) w
+                   where b = unsafeDupablePerformIO $ load "save.dat"
         _       -> trace ("cmd: " ++ app) $ w {cmd=app}
         where
             app = cmd w ++ [k]  -- append character
