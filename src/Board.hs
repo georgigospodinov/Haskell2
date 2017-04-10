@@ -192,13 +192,14 @@ evaluate b c = longest b c
 
 -- can not be derived
 --instance Serialize World
-instance Serialize Board
-instance Serialize Col
-
-save :: FilePath -> World -> IO World
-save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
-                 return wd
-
-load:: FilePath -> IO (Either String Board)
-load pth = do serBoard <- Data.ByteString.readFile pth
-              return (decode serBoard)
+-- instance Serialize Board
+-- instance Serialize Col
+--
+-- save :: FilePath -> World -> IO ()
+-- save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
+--                  return ()
+--
+--
+-- load:: FilePath -> IO (Either String Board)
+-- load pth = do serBoard <- Data.ByteString.readFile pth
+--               return (decode serBoard)

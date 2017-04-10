@@ -30,9 +30,12 @@ handleInput (EventKey (Char k) Down _ _) w
         '\b'    -> trace ("cmd: " ++ del) $ w{cmd=del}
         '\SUB'  -> case prev w of
                         Nothing -> w
-                        Just w' -> w'
---        '\DC3'  -> case save "save.dat" w of
---                    IO wd -> wd  -- sad monad
+                        Just w' -> case prev w' of
+                                        Nothing -> w'
+                                        Just w'' -> w''
+        -- '\DC3'  -> do
+        --             x <- save "save.dat" wd
+        --             return w
         _       -> trace ("cmd: " ++ app) $ w {cmd=app}
         where
             app = cmd w ++ [k]  -- append character

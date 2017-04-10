@@ -25,6 +25,7 @@ grid w = Pictures [square (x, y) w |
                   where bs = size $ board w
 
 
+
 -- square drawing :: starting position -> side -> picture drawn
 square :: Point -> World -> Picture
 square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
