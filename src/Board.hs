@@ -66,7 +66,8 @@ data World = World { board :: Board,
                      whites :: Picture,
                      cell :: Picture,
                      checked :: Bool,
-                     prev :: Maybe World
+                     prev :: Maybe World,
+                     isServer :: Maybe Bool -- if Nothing then no networking; just True = Server; just False = client
                    }
     deriving (Show, Generic)
 
@@ -80,6 +81,7 @@ initWorld = World initBoard Black ""
             (Color sq_border $ Line
                 [(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y), (x,y)])
             False
+            Nothing
             Nothing
               where (x,y) = (-sq_side/2,-sq_side/2)
 
@@ -98,8 +100,8 @@ makeMove b c (x,y) =  if outOfBounds b (x, y)|| invalid then Nothing
                             where b' = b{pieces = pieces b++[((x,y),c)]}  -- Update pieces first.
                                   invalid = not (checkRules b')
 
---eliminate :: Maybe a -> a
---eliminate (Just a) = a
+eliminate :: Maybe a -> a
+eliminate (Just a) = a
 
 -- Check whether the board is in a winning state for either player.
 -- Returns 'Nothing' if neither player has won yet
