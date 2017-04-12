@@ -4,7 +4,13 @@ import Graphics.Gloss
 import System.Environment
 import Data.String.Utils
 import Network.Socket
+import Network.BSD
 import System.IO
+import Data.List
+import Data.Bits
+import Network.Socket
+import Network.Socket.ByteString
+import qualified Data.ByteString.Char8 as C
 
 import Board
 import Draw
@@ -24,6 +30,7 @@ import AI
 -- and, if it is an AI's turn, should update the board with an AI generated
 -- move
 gray = dark(dark white) -- gray is not predefined
+
 
 parseArgument :: String -> World -> World
 parseArgument str w =   if startswith "size=" str then
@@ -60,9 +67,23 @@ mainLoop sock = do
     mainLoop sock           -- repeat
 
 runConn :: (Socket, SockAddr) -> IO ()
-runConn (sock, _) = do
-    send sock "Hello!\n"
+runConn (sock, saddr) = do
+    Network.Socket.send sock "Hello!\n"
+    msg <- Network.Socket.recv sock 1024
+    putStrLn msg
     close sock
+
+client :: IO ()
+client = withSocketsDo $
+      do addrinfos <- getAddrInfo Nothing (Just "127.0.0.1") (Just "4242")
+         let serveraddr = head addrinfos
+         sock <- socket (addrFamily serveraddr) Stream defaultProtocol
+         connect sock (addrAddress serveraddr)
+         sendAll sock $ C.pack "Hello, world!"
+         msg <- Network.Socket.ByteString.recv sock 1024
+         close sock
+         putStr "Received "
+         C.putStrLn msg
 
 toString :: Bool -> String {-  T = Bool (It was a type defined by him-}
 toString x = if x then "True" else "False"
@@ -75,7 +96,7 @@ main = do
           if (isServer (wrld x) == Just True) then
             networkSetup
           else if(isServer (wrld x) == Just False) then
-
+            client
           else
             putStrLn "No networking"
           -- run our server's logic
