@@ -38,7 +38,7 @@ parseArgument str w =   if startswith "size=" str then
                         else if startswith "target=" str then
                             w{ board = b {target = read $ drop (length "target=") str} }
                         else if startswith "server=" str then
-                            w{ isServer = read $ drop (length "server=") str }
+                            w{ net_data = (net_data w) { useNet = True , isServ = read $ drop (length "server=") str }, board = b { human = (if (read $ drop (length "server=") str) then Black else White) } }
                         else if startswith "fair=" str then
                             w{ board = b {fair = read $ drop (length "fair=") str} }
                         else if startswith "human=" str then
@@ -50,55 +50,61 @@ parseArgument str w =   if startswith "size=" str then
                         else w  -- argument not recognized
                           where b = board w
 
-networkSetup :: IO()
-networkSetup = do
-                putStrLn "networkSetup"
+serverSetup :: IO Socket
+serverSetup = do
+                putStrLn "setting up socket"
                 sock <- socket AF_INET Stream 0     -- create socket
                 setSocketOption sock ReuseAddr 1    -- make socket immediately reusable - eases debugging.
                 bind sock (SockAddrInet 4242 iNADDR_ANY)   -- listen on TCP port 4242.
-                listen sock 2                              -- set a max of 2 queued connections
-                mainLoop sock
-
-mainLoop :: Socket -> IO ()
-mainLoop sock = do
-    putStrLn "mainLoop"
-    conn <- accept sock     -- accept a connection and handle it
-    runConn conn            -- run our server's logic
-    mainLoop sock           -- repeat
+                putStrLn "listening"
+                listen sock 1                              -- set a max of 1 queued connections
+                putStrLn "accepting"
+                conn <- accept sock     -- accept a connection and handle it
+                return sock
 
 runConn :: (Socket, SockAddr) -> IO ()
 runConn (sock, saddr) = do
     Network.Socket.send sock "Hello!\n"
     msg <- Network.Socket.recv sock 1024
     putStrLn msg
+    sendAll sock $ C.pack "Hello, world!"
+    msg <- Network.Socket.ByteString.recv sock 1024
+    putStr "Received "
+    C.putStrLn msg
     close sock
 
-client :: IO ()
-client = withSocketsDo $
+clientSetup :: IO Socket
+clientSetup = withSocketsDo $
       do addrinfos <- getAddrInfo Nothing (Just "127.0.0.1") (Just "4242")
          let serveraddr = head addrinfos
          sock <- socket (addrFamily serveraddr) Stream defaultProtocol
          connect sock (addrAddress serveraddr)
-         sendAll sock $ C.pack "Hello, world!"
-         msg <- Network.Socket.ByteString.recv sock 1024
-         close sock
-         putStr "Received "
-         C.putStrLn msg
+         return sock
 
 toString :: Bool -> String {-  T = Bool (It was a type defined by him-}
 toString x = if x then "True" else "False"
 
+setupNetworking :: World -> IO World
+setupNetworking w = do
+                      if (useNet (net_data w))
+                        then
+                          if (isServ (net_data w))
+                            then
+                              do sock <- serverSetup
+                                 w { net_data = (net_data w) { socket = sock } }
+                                 return w
+                          else
+                            do sock <- clientSetup
+                               w { net_data = (net_data w) { socket = sock } }
+                               return w
+                      else
+                        return w
+
 main :: IO ()
 main = do
           x <- getArgs
-          putStrLn "Hi"
-          putStrLn $ toString (eliminate (isServer (wrld x)) )
-          if (isServer (wrld x) == Just True) then
-            networkSetup
-          else if(isServer (wrld x) == Just False) then
-            client
-          else
-            putStrLn "No networking"
+          putStrLn "Gumoku started"
+          w <- setupNetworking (wrld x)
           -- run our server's logic
           white_piece <- loadBMP "src/img/white.bmp"
           black_piece <- loadBMP "src/img/black.bmp"
@@ -111,7 +117,7 @@ main = do
             )  --(FullScreen (1,1))  -- currently fails
             gray  -- background color
             2  -- 'updateWorld' is called 2 times per second
-            ((wrld x) {blacks=black_piece,whites=white_piece,cell=cell_pic})
+            (w {blacks=black_piece,whites=white_piece,cell=cell_pic})
             drawWorld -- in Draw.hs
             handleInput -- in Input.hs
             updateWorld -- in AI.hs

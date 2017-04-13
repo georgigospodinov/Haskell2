@@ -40,6 +40,13 @@ wwh bs = - fromIntegral (win_size bs) / 2  -- window width halved
 --
 -- Board 10 5 [((5, 5), Black), ((8,7), White)]
 
+data Net_Data = Net_Data { useNet :: Bool,
+                           isServ :: Bool,
+                           socket :: Maybe Socket
+                         }
+
+initNet_Data = Net_Data False False Nothing
+
 data Board = Board { size :: Int,
                      target :: Int,
                      human :: Col,
@@ -67,7 +74,7 @@ data World = World { board :: Board,
                      cell :: Picture,
                      checked :: Bool,
                      prev :: Maybe World,
-                     isServer :: Maybe Bool -- if Nothing then no networking; just True = Server; just False = client
+                     net_data :: Net_Data
                    }
     deriving (Show, Generic)
 
@@ -82,7 +89,7 @@ initWorld = World initBoard Black ""
                 [(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y), (x,y)])
             False
             Nothing
-            Nothing
+            initNet_Data
               where (x,y) = (-sq_side/2,-sq_side/2)
 
 
@@ -92,7 +99,7 @@ outOfBounds b (x,y) = x < 0 || y < 0 || x >= size b -1 || y >= size b -1
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)
 makeMove :: Board -> Col -> Position -> Maybe Board
-makeMove b c (x,y) =  if outOfBounds b (x, y)|| invalid then Nothing
+makeMove b c (x,y) =  if outOfBounds b (x, y) || invalid then Nothing
                       else if won b /= Nothing then Nothing  -- Do not accept new moves, once there is a winner.
                       else if colOf b (x,y) == Nothing then
                         Just b'--{won = checkWon b'}  -- Update winner after pieces.
