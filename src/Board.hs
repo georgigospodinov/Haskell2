@@ -29,6 +29,12 @@ type Position = (Int, Int)
 -- Constants
 sq_border :: Color
 sq_border = black
+bar_side1 = 210::Float
+bar_side2 = 20::Float
+
+bar_text_scale = 0.008*bar_side2
+bar_margin = 2::Float
+
 sq_side = 50::Float
 -- BS = Board Size
 win_size :: Int -> Int
@@ -72,7 +78,8 @@ initBoard = Board 6 3 Black [] Nothing False
 -- Feel free to extend this, and 'Board' above with anything you think
 -- will be useful (information for the AI, for example, such as where the
 -- most recent moves were).
-data World = World { board :: Board,
+data World = World {
+                     board :: Board,
                      turn :: Col,
                      cmd :: String,
                      blacks :: Picture,
@@ -218,3 +225,6 @@ save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
 load:: FilePath -> IO (Either String Board)
 load pth = do serBoard <- Data.ByteString.readFile pth
               return (decode serBoard)
+
+isMenu:: World -> Bool
+isMenu wd = True
