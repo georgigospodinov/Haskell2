@@ -226,5 +226,6 @@ load:: FilePath -> IO (Either String Board)
 load pth = do serBoard <- Data.ByteString.readFile pth
               return (decode serBoard)
 
+-- Set true to enable menu
 isMenu:: World -> Bool
-isMenu wd = True
+isMenu wd = False
