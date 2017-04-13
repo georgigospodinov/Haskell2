@@ -10,13 +10,13 @@
 --                  blue
 --                  tiger
 
-import Board
+import System.IO.Unsafe
 
-updateWorld :: Float -> World -> World
-updateWorld t w = if not $ checked w then w {board = (board w) {won = checkWon (board w)},
-                                             checked = True}
-                  else w' {checked = False}
-                  where w' = aiturn w
+app :: String -> ()
+app s = unsafeDupablePerformIO $ appendFile "asd" s
 
+readAll :: FilePath -> String
+readAll path = unsafeDupablePerformIO $ readFile "asd"
 
-aiturn w = w
+main :: IO ()
+main = do return $ app "howdy\n"
