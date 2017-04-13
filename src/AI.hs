@@ -4,6 +4,15 @@ import Board
 
 import Debug.Trace
 import Data.List
+import System.IO.Unsafe
+
+import Network.BSD
+import System.IO
+import Data.List
+import Data.Bits
+import Network.Socket hiding (send, sendTo, recv, recvFrom)
+import Network.Socket.ByteString
+import qualified Data.ByteString.Char8 as C
 
 data GameTree = GameTree { game_board :: Board,
                            game_turn :: Col,
@@ -80,14 +89,33 @@ comp :: (Int, Position) -> (Int, Position) -> (Int, Position)
 comp (i1, p1) (i2, p2) = if i1 > i2 then (i1, p1)
                          else (i2, p2)
 
+posToString :: (Int, Int) -> String
+posToString (x, y) = "(" ++ show x ++ "," ++ show y ++ ")"
+
+stringToPos :: String -> (Int, Int)
+stringToPos s = read s::(Int, Int)
+
+rcvMsg :: Socket -> String
+rcvMsg sock = C.unpack $ unsafeDupablePerformIO $ Network.Socket.ByteString.recv sock 1024
+
+rcvMove :: World -> Socket -> World
+rcvMove w sock =  w { board = (board w) {pieces = (pieces (board w)) ++ [((x, y), c)]}, turn = (other $ turn w)} --trace ("Received " ++ posToString (x, y))
+         where (x, y) = stringToPos msg
+               msg    = rcvMsg sock
+               c      = turn w
+
 -- Update the world state after some time has passed
 updateWorld :: Float -- ^ time since last update (you can ignore this)
             -> World -- ^ current world state
             -> World
-updateWorld t w = if not $ checked w then  -- check winner
-                     w {board = (board w) {won = checkWon (board w)},
-                        checked = True}
-                  else (aiturn w) {checked = False}  -- otherwise the ai takes turn
+updateWorld t w = waitForNet( w {board = (board w) {won = checkWon (board w)}, checked = True} )
+                        where waitForNet w = if (useNet (net_data w)) && ((human $ board w) /= turn w)      -- if we use the network and it is not my turn (w is world with switched turn)
+                                              then rcvMove w (eliminate (Board.socket (net_data w)))        --    then wait and recieve the next move
+                                             else w                                                         --  else just return the world
+--if not $ checked w then  -- check winner
+--                     w {board = (board w) {won = checkWon (board w)},
+--                        checked = True}
+--                  else (aiturn w) {checked = False}  -- otherwise the ai takes turn
 
 aiturn :: World -> World
 aiturn w = if turn w == c then  -- if the ai is supposed to take turn

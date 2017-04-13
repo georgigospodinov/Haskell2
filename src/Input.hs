@@ -5,11 +5,28 @@ import Graphics.Gloss
 import System.IO.Unsafe
 import Data.Either.Unwrap
 
+import Network.BSD
+import System.IO
+import Data.List
+import Data.Bits
+import Network.Socket hiding (send, sendTo, recv, recvFrom)
+import Network.Socket.ByteString
+import qualified Data.ByteString.Char8 as C
+
 import Board
 import AI
 import Draw
 
 import Debug.Trace
+
+sendMove :: World -> (Int, Int) -> IO World
+sendMove w (x, y) = do sendMsg (eliminate (Board.socket (net_data w))) ( posToString (x, y) )
+                       let s = "sent " ++ posToString (x, y)
+                       putStrLn s
+                       return w
+
+sendMsg :: Socket -> String -> IO Int
+sendMsg sock msg = send sock $ C.pack msg
 
 -- Update the world state given an input event. Some sample input events
 -- are given; when they happen, there is a trace printed on the console
@@ -20,10 +37,14 @@ import Debug.Trace
 handleInput :: Event -> World -> World
 --handleInput (EventMotion (x, y)) w = trace ("Mouse moved to: " ++ show (x,y)) w
 handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
-    = case makeMove (board w) (turn w) (convx, convy) of
-        Just b -> World b (other (turn w)) "" (blacks w) (whites w) (cell w) False (Just w) -- updated world
-        Nothing -> w  -- same world
+    = trace ("handleInput to " ++ posToString (convx, convy)) (case makeMove (board w) (turn w) (convx, convy) of
+        Just b ->  sendNet (w' b w) (convx, convy) -- updated world sendNet
+        Nothing -> w  )-- same world
         where  -- convert graphics coords to board coords
+            sendNet w (x, y) = if (useNet (net_data w)) && ((human $ board w) /= turn w)  -- if we use the network and it was my turn
+                                then trace "sending move" unsafeDupablePerformIO $ sendMove w (x, y)           --    then send the move over the network
+                               else trace "not sending move" w                                                     --  else just return the world
+            w' b w = World b (other (turn w)) "" (blacks w) (whites w) (cell w) False (Just w) (net_data w)
             convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side
             convy = round $ (y-wwh (size $ board w)-sq_side)/sq_side
 handleInput (EventKey (Char k) Down _ _) w
