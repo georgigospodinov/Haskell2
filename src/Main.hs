@@ -32,8 +32,6 @@ import AI
 -- move
 gray = dark(dark white) -- gray is not predefined
 
-port = "5013"
-
 parseArgument :: String -> World -> World
 parseArgument str w =   if startswith "size=" str then
                             w{ board = b {size = read $ drop (length "size=") str} }
@@ -41,6 +39,10 @@ parseArgument str w =   if startswith "size=" str then
                             w{ board = b {target = read $ drop (length "target=") str} }
                         else if startswith "server=" str then
                             w{ net_data = (net_data w) { useNet = True , isServ = read $ drop (length "server=") str }, board = b { human = (if (read $ drop (length "server=") str) then Black else White) } }
+                        else if startswith "addr=" str then
+                            w{ net_data = (net_data w) { addr = read $ drop (length "addr=") str} }
+                        else if startswith "port=" str then
+                            w{ net_data = (net_data w) { port = read $ drop (length "port=") str} }
                         else if startswith "fair=" str then
                             w{ board = b {fair = read $ drop (length "fair=") str} }
                         else if startswith "human=" str then
@@ -52,30 +54,30 @@ parseArgument str w =   if startswith "size=" str then
                         else w  -- argument not recognized
                           where b = board w
 
-serverSetup :: IO Socket
-serverSetup = do
-                putStrLn "setting up socket"
+serverSetup :: String -> IO Socket
+serverSetup prt = do
                 addrinfos <- getAddrInfo
                     (Just (defaultHints {addrFlags = [AI_PASSIVE]}))
-                    Nothing (Just port)
+                    Nothing (Just prt)
                 let serveraddr = head addrinfos
                 sock <- Network.Socket.socket (addrFamily serveraddr) Stream defaultProtocol
                 bind sock (addrAddress serveraddr)
-                putStrLn "listening"
                 listen sock 1
-                putStrLn "accepting"
+                putStrLn "OK - Socket Ready"
                 (conn, _) <- accept sock
-                putStrLn "connected"
+                putStrLn "OK - Connected to '"
+                putStrLn "INFO - Acting as Server."
                 return conn
 
-clientSetup :: IO Socket
-clientSetup = withSocketsDo $
-      do addrinfos <- getAddrInfo Nothing (Just "127.0.0.1") (Just port)
-         putStrLn ("connecting to 127.0.0.1:" ++ port )
+clientSetup :: String -> String -> IO Socket
+clientSetup addr prt = withSocketsDo $
+      do addrinfos <- getAddrInfo Nothing (Just addr) (Just prt)
+         putStrLn ("INFO - Attempting to connect to " ++ addr ++ ":" ++ prt )
          let serveraddr = head addrinfos
          sock <- Network.Socket.socket (addrFamily serveraddr) Stream defaultProtocol
          connect sock (addrAddress serveraddr)
-         putStrLn "connected successfully"
+         putStrLn ("OK - Connected to '" ++ addr ++ ":" ++ prt ++ "'")
+         putStrLn "INFO - Acting as Client."
          return sock
 
 toString :: Bool -> String {-  T = Bool (It was a type defined by him-}
@@ -87,11 +89,11 @@ setupNetworking w = do
                         then
                           if (isServ (net_data w))
                             then
-                              do sock <- serverSetup
+                              do sock <- serverSetup (port $ net_data w)
                                  let w' = w { net_data = (net_data w) { Board.socket = Just sock } }
                                  return w'
                           else
-                            do sock <- clientSetup
+                            do sock <- clientSetup (addr $ net_data w)  (port $ net_data w)
                                let w' = w { net_data = (net_data w) { Board.socket = Just sock } }
                                return w'
                       else
@@ -100,18 +102,16 @@ setupNetworking w = do
 main :: IO ()
 main = do
           x <- getArgs
-          putStrLn "Gumoku started"
           w <- setupNetworking (wrld x)
-          -- run our server's logic
+          putStrLn ( "INFO - Gumoku Game started with size=" ++ (show $ size $ board w) ++ " and target=" ++ (show $ target $ board w) ++ ".")
           white_piece <- loadBMP "src/img/white.bmp"
           black_piece <- loadBMP "src/img/black.bmp"
           cell_pic <- loadBMP "src/img/gomoku-part.bmp"
-          putStrLn "HERE1"
           play
             (InWindow "Gomoku"  -- window title
                 (ws x, ws x)
                 (100, 100)  -- window starting position on screen
-            )  --(FullScreen (1,1))  -- currently fails
+            )
             gray  -- background color
             2  -- 'updateWorld' is called 2 times per second
             (w {blacks=black_piece,whites=white_piece,cell=cell_pic})

@@ -43,13 +43,15 @@ wwh bs = - fromIntegral (win_size bs) / 2  -- window width halved
 --
 -- Board 10 5 [((5, 5), Black), ((8,7), White)]
 
-data Net_Data = Net_Data { useNet :: Bool,
-                           isServ :: Bool,
-                           socket :: Maybe Socket
+data Net_Data = Net_Data { useNet :: Bool,          -- if the network should be used
+                           isServ :: Bool,          -- if this instance of the game is the server or client
+                           socket :: Maybe Socket,  -- connected socket to use when sending and recv msgs
+                           addr   :: String,        -- the ip address to connect to
+                           port   :: String         -- the port to use/connect to
                          }
   deriving (Show, Generic)
 
-initNet_Data = Net_Data False False Nothing
+initNet_Data = Net_Data False False Nothing "127.0.0.1" "5234"
 
 data Board = Board { size :: Int,
                      target :: Int,
