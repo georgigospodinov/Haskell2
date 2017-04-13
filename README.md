@@ -28,9 +28,10 @@ computer=..  # Same as "ai=.."
 server=True  # Using a network opponent and starting this game as the server  
 server=False # Using a network opponent and starting this game as the client  
              # leave server out to launch non-network game  
+i
   
 ### Conflicting options 
-When mutliple options were set with conflicting Colour assignments, only the last option is used.  
+When mutliple options were set with conflicting Colour assignments, only the first option is used.  
   
 ### Networking
 #### Notes:
