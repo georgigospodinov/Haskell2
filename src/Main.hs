@@ -11,6 +11,7 @@ import Data.Bits
 import Network.Socket
 import Network.Socket.ByteString
 import qualified Data.ByteString.Char8 as C
+import System.IO.Unsafe
 
 import Board
 import Draw
@@ -31,6 +32,7 @@ import AI
 -- move
 gray = dark(dark white) -- gray is not predefined
 
+port = "5013"
 
 parseArgument :: String -> World -> World
 parseArgument str w =   if startswith "size=" str then
@@ -53,32 +55,27 @@ parseArgument str w =   if startswith "size=" str then
 serverSetup :: IO Socket
 serverSetup = do
                 putStrLn "setting up socket"
-                sock <- socket AF_INET Stream 0     -- create socket
-                setSocketOption sock ReuseAddr 1    -- make socket immediately reusable - eases debugging.
-                bind sock (SockAddrInet 4242 iNADDR_ANY)   -- listen on TCP port 4242.
+                addrinfos <- getAddrInfo
+                    (Just (defaultHints {addrFlags = [AI_PASSIVE]}))
+                    Nothing (Just port)
+                let serveraddr = head addrinfos
+                sock <- Network.Socket.socket (addrFamily serveraddr) Stream defaultProtocol
+                bind sock (addrAddress serveraddr)
                 putStrLn "listening"
-                listen sock 1                              -- set a max of 1 queued connections
+                listen sock 1
                 putStrLn "accepting"
-                conn <- accept sock     -- accept a connection and handle it
-                return sock
-
-runConn :: (Socket, SockAddr) -> IO ()
-runConn (sock, saddr) = do
-    Network.Socket.send sock "Hello!\n"
-    msg <- Network.Socket.recv sock 1024
-    putStrLn msg
-    sendAll sock $ C.pack "Hello, world!"
-    msg <- Network.Socket.ByteString.recv sock 1024
-    putStr "Received "
-    C.putStrLn msg
-    close sock
+                (conn, _) <- accept sock
+                putStrLn "connected"
+                return conn
 
 clientSetup :: IO Socket
 clientSetup = withSocketsDo $
-      do addrinfos <- getAddrInfo Nothing (Just "127.0.0.1") (Just "4242")
+      do addrinfos <- getAddrInfo Nothing (Just "127.0.0.1") (Just port)
+         putStrLn ("connecting to 127.0.0.1:" ++ port )
          let serveraddr = head addrinfos
-         sock <- socket (addrFamily serveraddr) Stream defaultProtocol
+         sock <- Network.Socket.socket (addrFamily serveraddr) Stream defaultProtocol
          connect sock (addrAddress serveraddr)
+         putStrLn "connected successfully"
          return sock
 
 toString :: Bool -> String {-  T = Bool (It was a type defined by him-}
@@ -91,12 +88,12 @@ setupNetworking w = do
                           if (isServ (net_data w))
                             then
                               do sock <- serverSetup
-                                 w { net_data = (net_data w) { socket = sock } }
-                                 return w
+                                 let w' = w { net_data = (net_data w) { Board.socket = Just sock } }
+                                 return w'
                           else
                             do sock <- clientSetup
-                               w { net_data = (net_data w) { socket = sock } }
-                               return w
+                               let w' = w { net_data = (net_data w) { Board.socket = Just sock } }
+                               return w'
                       else
                         return w
 

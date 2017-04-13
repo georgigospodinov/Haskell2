@@ -7,6 +7,9 @@ import Data.Foldable
 import Data.Serialize
 import Data.ByteString (writeFile, readFile)
 import GHC.Generics
+import Network.Socket
+
+import Debug.Trace
 
 data Col = Black | White
   deriving (Show, Eq, Generic)
@@ -44,6 +47,7 @@ data Net_Data = Net_Data { useNet :: Bool,
                            isServ :: Bool,
                            socket :: Maybe Socket
                          }
+  deriving (Show, Generic)
 
 initNet_Data = Net_Data False False Nothing
 
@@ -99,11 +103,11 @@ outOfBounds b (x,y) = x < 0 || y < 0 || x >= size b -1 || y >= size b -1
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)
 makeMove :: Board -> Col -> Position -> Maybe Board
-makeMove b c (x,y) =  if outOfBounds b (x, y) || invalid then Nothing
+makeMove b c (x,y) =  trace "clicked" (if outOfBounds b (x, y) || invalid then Nothing
                       else if won b /= Nothing then Nothing  -- Do not accept new moves, once there is a winner.
                       else if colOf b (x,y) == Nothing then
                         Just b'--{won = checkWon b'}  -- Update winner after pieces.
-                      else Nothing
+                      else Nothing)
                             where b' = b{pieces = pieces b++[((x,y),c)]}  -- Update pieces first.
                                   invalid = not (checkRules b')
 
