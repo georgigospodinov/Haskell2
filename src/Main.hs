@@ -40,9 +40,9 @@ parseArgument str w =   if startswith "size=" str then
                         else if startswith "server=" str then
                             w{ net_data = (net_data w) { useNet = True , isServ = read $ drop (length "server=") str }, board = b { human = (if (read $ drop (length "server=") str) then Black else White) } }
                         else if startswith "addr=" str then
-                            w{ net_data = (net_data w) { addr = read $ drop (length "addr=") str} }
+                            w{ net_data = (net_data w) { addr = drop (length "addr=") str} }
                         else if startswith "port=" str then
-                            w{ net_data = (net_data w) { port = read $ drop (length "port=") str} }
+                            w{ net_data = (net_data w) { port = drop (length "port=") str} }
                         else if startswith "fair=" str then
                             w{ board = b {fair = read $ drop (length "fair=") str} }
                         else if startswith "human=" str then
