@@ -37,6 +37,8 @@ parseArgument str w =   if startswith "size=" str then
                             w{ aion = read $ drop (length "ai-on=") str }
                         else if str == "replay" then
                             w{ replayon = True }
+                        else if str == "recording" then
+                            w{ recording = True }
                         else w
                           where b = board w -- argument not recognized
 
@@ -62,6 +64,6 @@ main =  do
             handleInput                     -- in Input.hs: handles user input (eg. ctr+s, ...)
             updateWorld                     -- in AI.hs   : updates the world
             where ws w = win_size $ size $ board $ wrld w   -- calculates world size
-                  wrld x = foldr parseArgument initWorld x  -- parses arguments
+                  wrld x = wrsz $ foldr parseArgument initWorld x  -- parses arguments
                   startreplay w = if replayon w then sequenceStart w -- starts replay
                                   else w

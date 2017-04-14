@@ -6,50 +6,60 @@ import Debug.Trace
 import System.IO.Unsafe
 
 {-
-Format:
-<size>\<color><row><column>...
-Example:
-08adeo
-Means Board Size 8  (thus max board size is 99)
-BLACK plays in row a (=0), column d (=3)
-WHITE plays in row d (=4), column o (=14)
+--Format:
+--<size>\<color><row><column>...
+--Example:
+--08adeo
+--Means Board Size 8  (thus max board size is 99)
+--BLACK plays in row a (=0), column d (=3)
+--WHITE plays in row d (=4), column o (=14)
+--
+--No need to save Black/White. Black goes first and they take turns.
+--No need to save the target as we can assume that the game is complete at end.
+--If not complete -> load from save.
 
-No need to save Black/White. Black goes first and they take turns.
-No need to save the target as we can assume that the game is complete at end.
-If not complete -> load from save.
+Edwin said that the recording should be somewhat readable by another program.
+SZ[05]\nAB[df]\nAW[gh]\n
 -}
 
-app :: String -> ()
-app move = unsafeDupablePerformIO $ appendFile "recording.sgf" move
+sgf_file = "recording.sgf"
 
 readAll :: String
-readAll = unsafeDupablePerformIO $ readFile "recording.sgf"
+readAll = unsafeDupablePerformIO $ readFile sgf_file
 
-encodeMove :: Position -> String
-encodeMove (x,y) = [r, c]  -- Player, Row, Column
-                   where  r = toEnum (x+97) :: Char
-                          c = toEnum (y+97) :: Char
+encodeMove :: Col -> Position -> String
+encodeMove color (x,y) = ['A',p,'[',r, c,']','\n']  -- Player, Row, Column
+                         where  r = toEnum (x+97) :: Char
+                                c = toEnum (y+97) :: Char
+                                p = if color == Black then 'B' else 'W'
 
-decodeMove :: Col -> String -> (Position, Col)
-decodeMove color (r:c:[]) = ((x, y), color)
-                          where x = fromEnum r -97  -- may need :: Int
-                                y = fromEnum c -97 -- :: Int
+decodeMove :: String -> (Position, Col)
+decodeMove color ('A':p:'[':r:c:']':'\n':[]) = ((x, y), color)
+                                               where x = fromEnum r -97  -- may need :: Int
+                                                     y = fromEnum c -97 -- :: Int
+                                                     color = if p == 'B' then Black else White
 
-decode :: String -> Col -> [(Position, Col)]
-decode [] _ = []
-decode str c = (decodeMove c (take 2 str)) : (decode (drop 2 str) (other c))
+decode :: String -> [(Position, Col)]
+decode [] = []
+decode str = (decodeMove (take 7 str)) : (decode (drop 7 str))
 
-decodeSize :: [Char] -> Int
-decodeSize (a:b:[]) = (read [a] :: Int)*10 + (read [b] :: Int)
+encodeSize :: Int -> String
+encodeSize x = "SZ["++a++b++"]\n"
+               where a = show $ x `div` 10
+                     b = show $ x `mod` 10
+
+decodeSize :: String -> Int
+decodeSize ('S':'Z':'[':a:b:']':'\n':[]) = (read [a] :: Int)*10 + (read [b] :: Int)
 
 data Record = History { bsize :: Int,
                         moves :: [(Position, Col)],
                         moves_read :: Int  -- How many moves have been replayed
                       }
-initRecord = History (decodeSize $ take 2 readAll) (decode (drop 2 readAll) Black) 0
+initRecord = History (decodeSize $ take 7 readAll) (decode (drop 7 readAll)) 0
 
+-- return the next move and increment the counter
 nextmove :: Record -> ((Position, Col), Record)
-nextmove r = ((moves r) !!(moves_read r), r{moves_read=moves_read r +1})  -- return the next move and increment the counter
+nextmove r = ((moves r) !!(moves_read r), r{moves_read=moves_read r +1})
 
 
 -- build worlds until a victory is reached
@@ -68,13 +78,22 @@ buildSequence r w = if won b /= Nothing then w
 sequenceStart :: World -> World
 sequenceStart w = buildSequence initRecord w
 
--- call updateWorld while decode length is not 0
-createFile = undefined  -- also wipes previous contents
+-- Writes the move to file and returns IO (second arg)
+writeMove :: (Position, Col) -> t -> IO t
+writeMove (pos, c) arg = do ignore <- appendFile sgf_file $ encodeMove c pos
+                            return arg
 
-replay :: World -> World
-replay w = w {board = case makeMove b c move of
-                             Just b' -> b'
-                             Nothing -> trace ("failed to replay: " ++ show c ++ show move) b
-             }
-             where b = board w
-                   (move, c) = fst $ nextmove initRecord
+-- Writes the move to file and retuns its second argument.
+wrmv :: World -> (Position, Col) -> t -> t
+wrmv w m arg = if recording w then
+                    unsafeDupablePerformIO $ writeMove m arg
+               else arg
+
+writeSize :: World -> IO World
+writeSize w = do ignore <- writeFile sgf_file $ encodeSize
+                 return w
+
+wrsz :: World -> World
+wrsz w = if recording w then
+                unsafeDupablePerformIO $ writeSize w
+         else w

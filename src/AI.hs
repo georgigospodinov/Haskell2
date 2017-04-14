@@ -90,7 +90,7 @@ comp2 (i1, p1) (i2, p2) = if i1 < i2 then (i1, p1)
 aiturn :: World -> World
 aiturn w = if turn w == c then  -- if the ai is supposed to take turn
               w {board = case makeMove b c move  of
-                              Just b'-> b'
+                              Just b'-> wrmv w (move, c) b'
                               Nothing -> trace ("failed to make move:"++show move) b,
                  turn = human b, prev = Just w}
            else w -- otherwise do no change

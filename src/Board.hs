@@ -83,6 +83,7 @@ data World = World { board :: Board,
                      cmd :: String,
                      aion :: Bool,
                      replayon :: Bool,
+                     recording :: Bool,
                      blacks :: Picture,
                      whites :: Picture,
                      cell :: Picture,
@@ -96,7 +97,7 @@ pic w Black = blacks w
 pic w White = whites w
 
 
-initWorld = World initBoard Black "" True False
+initWorld = World initBoard Black "" True False False
             (Color black $ circleSolid (sq_side/2))
             (Color white $ circleSolid (sq_side/2))
             (Color sq_border $ Line
