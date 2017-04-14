@@ -34,10 +34,10 @@ encodeMove color (x,y) = ['A',p,'[',r, c,']','\n']  -- Player, Row, Column
                                 p = if color == Black then 'B' else 'W'
 
 decodeMove :: String -> (Position, Col)
-decodeMove color ('A':p:'[':r:c:']':'\n':[]) = ((x, y), color)
-                                               where x = fromEnum r -97  -- may need :: Int
-                                                     y = fromEnum c -97 -- :: Int
-                                                     color = if p == 'B' then Black else White
+decodeMove ('A':p:'[':r:c:']':'\n':[]) = ((x, y), color)
+                                         where x = fromEnum r -97  -- may need :: Int
+                                               y = fromEnum c -97 -- :: Int
+                                               color = if p == 'B' then Black else White
 
 decode :: String -> [(Position, Col)]
 decode [] = []
@@ -90,7 +90,7 @@ wrmv w m arg = if recording w then
                else arg
 
 writeSize :: World -> IO World
-writeSize w = do ignore <- writeFile sgf_file $ encodeSize
+writeSize w = do ignore <- writeFile sgf_file $ encodeSize $ size $ board w
                  return w
 
 wrsz :: World -> World
