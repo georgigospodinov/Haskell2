@@ -34,6 +34,7 @@ bar_side1 = 210::Float
 bar_side2 = 20::Float
 bar_text_scale = 0.008*bar_side2
 bar_margin = 2::Float
+
 -- BS = Board Size
 win_size :: Int -> Int
 win_size bs = bs * (round sq_side::Int)
@@ -93,6 +94,7 @@ data World = World { board :: Board,
 pic :: World -> Col -> Picture
 pic w Black = blacks w
 pic w White = whites w
+
 
 initWorld = World initBoard Black "" True False
             (Color black $ circleSolid (sq_side/2))
@@ -236,3 +238,9 @@ load pth = do serBoard <- Data.ByteString.readFile pth
 -- Set True to enable menu
 isMenu:: World -> Bool
 isMenu wd = False
+
+singlePlayerChoice:: World -> World
+singlePlayerChoice w = w {aion = True}
+
+-- multiPlayerChoiceHost:: World -> World
+-- singlePlayerChoice w = w{ net_data = (net_data w) { useNet = True , isServ = True}, board = b { human = (if (read $ drop (length "server=") str) then Black else White) } }

@@ -22,17 +22,19 @@ import Network
                         _ other commands unimplimented. -}
 handleInput :: Event -> World -> World
 handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
-    = case makeMove (board w) (turn w) (convx, convy) of  -- try to make the move
-        Just b ->  sendNet (w' b w) (convx, convy)        -- valid move =>   return updated world and send over network
-        Nothing -> w                                      -- invalid move => return same world
-        where
-            sendNet w (x, y) = if (useNet (net_data w)) && ((human $ board w) /= turn w)  -- if we use the network and it was previously my turn
-                                then unsafeDupablePerformIO $ sendMove w (x, y)           --    then send the move over the network
-                               else w                                                     --  else just return the world
-            w' b w = World b (other (turn w)) "" (aion w) False (blacks w) (whites w) (cell w) (Just w) (net_data w)
-                                                                                          -- updates the world, switching the turn and using the new board
-            convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side                      -- convert graphics x coords to board coords
-            convy = round $ (y-wwh (size $ board w)-sq_side)/sq_side                      -- convert graphics y coords to board coords
+    = if isMenu w
+        then w
+      else case makeMove (board w) (turn w) (convx, convy) of  -- try to make the move
+          Just b ->  sendNet (w' b w) (convx, convy)        -- valid move =>   return updated world and send over network
+          Nothing -> w                                      -- invalid move => return same world
+          where
+              sendNet w (x, y) = if (useNet (net_data w)) && ((human $ board w) /= turn w)  -- if we use the network and it was previously my turn
+                                  then unsafeDupablePerformIO $ sendMove w (x, y)           --    then send the move over the network
+                                 else w                                                     --  else just return the world
+              w' b w = World b (other (turn w)) "" (aion w) False (blacks w) (whites w) (cell w) (Just w) (net_data w)
+                                                                                            -- updates the world, switching the turn and using the new board
+              convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side                      -- convert graphics x coords to board coords
+              convy = round $ (y-wwh (size $ board w)-sq_side)/sq_side                      -- convert graphics y coords to board coords
 
 handleInput (EventKey (Char k) Down _ _) w
     = case k of

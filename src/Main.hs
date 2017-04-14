@@ -47,7 +47,7 @@ main =  do
           x <- getArgs                      -- get arguments from the Environment
           w <- setupNetworking (wrld x)     -- setup netowrking if needed
           putStrLn ( "INFO - Gumoku Game started with size=" ++ (show $ size $ board w) ++ " and target=" ++ (show $ target $ board w) ++ ".")
-          white_piece <- loadPNG "src/img/white.bmp"    -- white picture (white tiger)
+          white_piece <- loadBMP "src/img/white.bmp"    -- white picture (white tiger)
           black_piece <- loadBMP "src/img/black.bmp"    -- black picture (black tiger)
           cell_pic <- loadBMP "src/img/gomoku-part.bmp" -- cell picture  (wood)
           play
