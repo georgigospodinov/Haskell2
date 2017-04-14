@@ -3,21 +3,13 @@ module Main where
 import Graphics.Gloss
 import System.Environment
 import Data.String.Utils
-import Network.Socket
-import Network.BSD
-import System.IO
-import Data.List
-import Data.Bits
-import Network.Socket
-import Network.Socket.ByteString
-import qualified Data.ByteString.Char8 as C
-import System.IO.Unsafe
 
 import Board
 import Draw
 import Input
-import AI
 import Recording
+import Network
+import Update
 
 -- 'play' starts up a graphics window and sets up handlers for dealing
 -- with inputs and updating the world state.
@@ -58,52 +50,8 @@ parseArgument str w =   if startswith "size=" str then
                         else w  -- argument not recognized
                           where b = board w
 
-serverSetup :: String -> IO Socket
-serverSetup prt = do
-                addrinfos <- getAddrInfo
-                    (Just (defaultHints {addrFlags = [AI_PASSIVE]}))
-                    Nothing (Just prt)
-                let serveraddr = head addrinfos
-                sock <- Network.Socket.socket (addrFamily serveraddr) Stream defaultProtocol
-                bind sock (addrAddress serveraddr)
-                listen sock 1
-                putStrLn "OK - Socket Ready"
-                (conn, _) <- accept sock
-                putStrLn "OK - Connected to '"
-                putStrLn "INFO - Acting as Server."
-                return conn
-
-clientSetup :: String -> String -> IO Socket
-clientSetup addr prt = withSocketsDo $
-      do addrinfos <- getAddrInfo Nothing (Just addr) (Just prt)
-         putStrLn ("INFO - Attempting to connect to " ++ addr ++ ":" ++ prt )
-         let serveraddr = head addrinfos
-         sock <- Network.Socket.socket (addrFamily serveraddr) Stream defaultProtocol
-         connect sock (addrAddress serveraddr)
-         putStrLn ("OK - Connected to '" ++ addr ++ ":" ++ prt ++ "'")
-         putStrLn "INFO - Acting as Client."
-         return sock
-
-toString :: Bool -> String {-  T = Bool (It was a type defined by him-}
-toString x = if x then "True" else "False"
-
-setupNetworking :: World -> IO World
-setupNetworking w = do
-                      if (useNet (net_data w))
-                        then
-                          if (isServ (net_data w))
-                            then
-                              do sock <- serverSetup (port $ net_data w)
-                                 let w' = w { net_data = (net_data w) { Board.socket = Just sock } }
-                                 return w'
-                          else
-                            do sock <- clientSetup (addr $ net_data w)  (port $ net_data w)
-                               let w' = w { net_data = (net_data w) { Board.socket = Just sock } }
-                               return w'
-                      else
-                        return w
-
 gray = dark(dark white) -- gray is not predefined
+
 main :: IO ()
 main =  do
           x <- getArgs
@@ -127,12 +75,3 @@ main =  do
                   wrld x = foldr parseArgument initWorld x
                   startreplay w = if replayon w then sequenceStart w
                                   else w
-
-
-
--- play:: Display -> Color -> Int
--- -> world
--- -> (world -> Picture)
--- -> (Event -> world -> world)
--- -> (Float -> world -> world)
--- -> IO ()

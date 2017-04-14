@@ -5,28 +5,10 @@ import Graphics.Gloss
 import System.IO.Unsafe
 import Data.Either.Unwrap
 
-import Network.BSD
-import System.IO
-import Data.List
-import Data.Bits
-import Network.Socket hiding (send, sendTo, recv, recvFrom)
-import Network.Socket.ByteString
-import qualified Data.ByteString.Char8 as C
-
 import Board
-import AI
-import Draw
+import Network
 
 import Debug.Trace
-
-sendMove :: World -> (Int, Int) -> IO World
-sendMove w (x, y) = do sendMsg (eliminate (Board.socket (net_data w))) ( posToString (x, y) )
-                       let s = "sent " ++ posToString (x, y)
-                       putStrLn s
-                       return w
-
-sendMsg :: Socket -> String -> IO Int
-sendMsg sock msg = send sock $ C.pack msg
 
 -- Update the world state given an input event. Some sample input events
 -- are given; when they happen, there is a trace printed on the console

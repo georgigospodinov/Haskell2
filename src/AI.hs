@@ -7,14 +7,6 @@ import Debug.Trace
 import Data.List
 import System.IO.Unsafe
 
-import Network.BSD
-import System.IO
-import Data.List
-import Data.Bits
-import Network.Socket hiding (send, sendTo, recv, recvFrom)
-import Network.Socket.ByteString
-import qualified Data.ByteString.Char8 as C
-
 data GameTree = GameTree { game_board :: Board,
                            game_turn :: Col,
                            next_moves :: [(Position, GameTree)] }
@@ -93,40 +85,6 @@ comp2 :: (Int, Position) -> (Int, Position) -> (Int, Position)
 comp2 (i1, p1) (i2, p2) = if i1 < i2 then (i1, p1)
                           else (i2, p2)
 
-posToString :: (Int, Int) -> String
-posToString (x, y) = "(" ++ show x ++ "," ++ show y ++ ")"
-
-stringToPos :: String -> (Int, Int)
-stringToPos s = read s::(Int, Int)
-
-rcvMsg :: Socket -> String
-rcvMsg sock = C.unpack $ unsafeDupablePerformIO $ Network.Socket.ByteString.recv sock 1024
-
-rcvMove :: World -> Socket -> World
-rcvMove w sock =  w { board = (board w) {pieces = (pieces (board w)) ++ [((x, y), c)]}, turn = (other $ turn w)} --trace ("Received " ++ posToString (x, y))
-         where (x, y) = stringToPos msg
-               msg    = rcvMsg sock
-               c      = turn w
-
--- Update the world state after some time has passed
-updateWorld :: Float -- ^ time since last update (you can ignore this)
-            -> World -- ^ current world state
-            -> World
-updateWorld t w =   if replayon w then
-                        case prev w of
-                              Just w' -> w'
-                              Nothing -> trace "End of replay?" w
-                    else if useNet (net_data w) then waitForNet w
-                    else if aion w then aiturn w
-                    else w
-
-waitForNet w = wait( w {board = (board w) {won = checkWon (board w)}} )
-                      where wait w =
-                                -- if we use the network and it is not my turn (w is world with switched turn)
-                                if (useNet (net_data w)) && ((human $ board w) /= turn w)
-                                    -- then wait and recieve the next move
-                                    then rcvMove w (eliminate (Board.socket (net_data w)))
-                                else w  --  else just return the world
 
 aiturn :: World -> World
 aiturn w = if turn w == c then  -- if the ai is supposed to take turn
@@ -140,15 +98,6 @@ aiturn w = if turn w == c then  -- if the ai is supposed to take turn
                  gt = buildTree besideFilledCells b c
                  turnsToThinkAhead = 1  -- drastic slow down at 3, fast at 1
                  move = getBestMove turnsToThinkAhead gt c
-
-
-replay :: World -> World
-replay w = w {board = case makeMove b c move of
-                             Just b' -> b'
-                             Nothing -> trace ("failed to replay: " ++ show c ++ show move) b
-             }
-             where b = board w
-                   (move, c) = fst $ nextmove initRecord
 
 {- Hint: 'updateWorld' is where the AI gets called. If the world state
  indicates that it is a computer player's turn, updateWorld should use

@@ -70,3 +70,11 @@ sequenceStart w = buildSequence initRecord w
 
 -- call updateWorld while decode length is not 0
 createFile = undefined  -- also wipes previous contents
+
+replay :: World -> World
+replay w = w {board = case makeMove b c move of
+                             Just b' -> b'
+                             Nothing -> trace ("failed to replay: " ++ show c ++ show move) b
+             }
+             where b = board w
+                   (move, c) = fst $ nextmove initRecord
