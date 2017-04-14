@@ -223,12 +223,14 @@ instance Serialize Col
 -- update to save world
 save :: FilePath -> World -> IO World
 save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
+                 putStrLn "OK - Game Saved."
                  return wd
 
 -- update to load world and to accept a world.
 -- Keep the images from the accepted world, change the other components to what was loaded
 load:: FilePath -> IO (Either String Board)
 load pth = do serBoard <- Data.ByteString.readFile pth
+              putStrLn "OK - Game Loaded."
               return (decode serBoard)
 
 -- Set True to enable menu

@@ -7,11 +7,12 @@ import Debug.Trace
 import Data.List
 import System.IO.Unsafe
 
+{-| The game tree. -}
 data GameTree = GameTree { game_board :: Board,
                            game_turn :: Col,
                            next_moves :: [(Position, GameTree)] }
 
--- Given a function to generate plausible moves (i.e. board positions)
+{-| A function to generate plausible moves (i.e. board positions)
 -- for a player (Col) on a particular board, generate a (potentially)
 -- infinite game tree.
 --
@@ -21,7 +22,7 @@ data GameTree = GameTree { game_board :: Board,
 -- An important part of the AI is the 'gen' function you pass in here.
 -- Rather than generating every possible move (which would result in an
 -- unmanageably large game tree!) it could, for example, generate moves
--- according to various simpler strategies.
+-- according to various simpler strategies.-}
 buildTree :: (Board -> Col -> [Position]) -- ^ Move generator
              -> Board -- ^ board state
              -> Col -- ^ player to play next
@@ -57,7 +58,7 @@ recurse d select gt c = select options
                                 next_values = [recurse (d-1) (foeselector select) nt c | (p, nt) <- next_moves gt]
                                 options :: [(Int, Position)]  -- taking the lower of the sub-tree and the current node
                                 options = [(min' cv nv, p) | ((nv, _),(cv, p)) <- zip next_values curr_values]
-                                min' a b = if a == 0- (target $ game_board gt) then a  -- if the game is already lost, it cannot get better
+                                min' a b = if a == 0 - (target $ game_board gt) then a  -- if the game is already lost, it cannot get better
                                            else if a == (target $ game_board gt) then a  -- if a means winning, then a
                                            else min a b  -- else, the lower of the two
                                            -- this way it will detect if a move will eventually lead to a loss
@@ -96,7 +97,7 @@ aiturn w = if turn w == c then  -- if the ai is supposed to take turn
            where b = board w
                  c = other $ human b
                  gt = buildTree besideFilledCells b c
-                 turnsToThinkAhead = 1  -- drastic slow down at 3, fast at 1
+                 turnsToThinkAhead = 2  -- drastic slow down at 3, fast at 1
                  move = getBestMove turnsToThinkAhead gt c
 
 {- Hint: 'updateWorld' is where the AI gets called. If the world state

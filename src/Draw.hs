@@ -5,11 +5,9 @@ import Board
 
 import Debug.Trace
 
--- Given a world state, return a Picture which will render the world state.
--- Currently just draws a single blue circle as a placeholder.
---
--- This will need to extract the Board from the world state and draw it
--- as a grid plus pieces.
+{-| Given a world state, return a Picture which will render the world state.
+    This will need to extract the Board from the world state and draw it
+    as a grid plus pieces. -}
 drawWorld :: World -> Picture
 drawWorld w = if isMenu w then Pictures [menu w]
               else if (won $ board w) /= Nothing then
@@ -18,6 +16,7 @@ drawWorld w = if isMenu w then Pictures [menu w]
                             tiles w
                             ]
 
+-- | Draws the grid as an 2d array of squares
 grid :: World -> Picture
 grid w = Pictures [square (x, y) w |
                         x <- [wwh bs, wwh bs+sq_side..wwh bs+sq_side*(fromIntegral bs -1)],
@@ -27,7 +26,7 @@ grid w = Pictures [square (x, y) w |
 
 
 
--- square drawing :: starting position -> side -> picture drawn
+-- | Draws a square by using the bmp picture and translating it to the right coordinate
 square :: Point -> World -> Picture
 square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
 

@@ -14,11 +14,11 @@ BASIC RULES
     [x] Player wins when 3 in a row
 
 BASIC AI
-[] AI.hs move generator
+[x] AI.hs move generator
     [x] Generates all possible moves
 
-[] Board.hs
-    [] Evaluates board
+[x] Board.hs
+    [x] Evaluates board
 
 
 
@@ -28,10 +28,10 @@ EASY 1
 [x] Recognize command line arguments
 
 EASY 2
-[] Implement UNDO
+[x] Implement UNDO
 
 EASY 3
-[] Implement Rule Variants
+[x] Implement Rule Variants
 
 MEDIUM 1
 [] In-game option setting
@@ -39,16 +39,16 @@ MEDIUM 1
     [] Change World
 
 MEDIUM 2
-[] Use bitmap images instead of plain pictures
+[x] Use bitmap images instead of plain pictures
     [x] For pieces
-    [] For board?
+    [x] For board?
 
 MEDIUM 3
 [] Hints
 
 MEDIUM 4
-[] Save game
-[] Load game
+[x] Save game
+[-] Load game
 
 MEDIUM/HARD 1
 [] Time Limits
@@ -58,11 +58,11 @@ MEDIUM/HARD 2
 [] Game mods (Renju, Pente)
 
 HARD 1
-[] Record games in .sgf files
-[] Replay games
+[-] Record games in .sgf files
+[?] Replay games
 
 HARD 2
 [] AI-s with different skills/strategies
 
 HARD 3
-[] Network play
+[x] Network play
