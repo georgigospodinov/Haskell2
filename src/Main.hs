@@ -30,7 +30,6 @@ import AI
 -- 'updateWorld' is called 10 times per second (that's the "10" parameter)
 -- and, if it is an AI's turn, should update the board with an AI generated
 -- move
-gray = dark(dark white) -- gray is not predefined
 
 parseArgument :: String -> World -> World
 parseArgument str w =   if startswith "size=" str then
@@ -51,6 +50,10 @@ parseArgument str w =   if startswith "size=" str then
                             w{ board = b {human = other $ read $ drop (length "ai=") str} }
                         else if startswith "computer=" str then
                             w{ board = b {human = other $ read $ drop (length "computer=") str} }
+                        else if startswith "ai-on=" str then
+                            w{ aion = read $ drop (length "ai-on=") str }
+                        else if str == "replay" then
+                            w{ replayon = True }
                         else w  -- argument not recognized
                           where b = board w
 
@@ -99,8 +102,9 @@ setupNetworking w = do
                       else
                         return w
 
+gray = dark(dark white) -- gray is not predefined
 main :: IO ()
-main = do
+main =  do
           x <- getArgs
           w <- setupNetworking (wrld x)
           putStrLn ( "INFO - Gumoku Game started with size=" ++ (show $ size $ board w) ++ " and target=" ++ (show $ target $ board w) ++ ".")
@@ -113,13 +117,15 @@ main = do
                 (100, 100)  -- window starting position on screen
             )
             gray  -- background color
-            2  -- 'updateWorld' is called 2 times per second
-            (w {blacks=black_piece,whites=white_piece,cell=cell_pic})
+            (if replay w then 1 else 2)  -- times per second 'updateWorld' is called
+            (startreplay $ w {blacks=black_piece,whites=white_piece,cell=cell_pic})
             drawWorld -- in Draw.hs
             handleInput -- in Input.hs
             updateWorld -- in AI.hs
             where ws w = win_size $ size $ board $ wrld w
                   wrld x = foldr parseArgument initWorld x
+                  startreplay w = if replay w then sequenceStart w
+                                  else w
 
 
 

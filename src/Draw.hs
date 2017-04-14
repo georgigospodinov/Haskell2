@@ -12,9 +12,9 @@ import Debug.Trace
 -- as a grid plus pieces.
 drawWorld :: World -> Picture
 drawWorld w = if isMenu w then Pictures [menu w]
-              else if (won $ board w) /= Nothing
-                then Pictures [winmsg (size $ board w) (won (board w))]
-                else Pictures [grid w,
+              else if (won $ board w) /= Nothing then
+                    Pictures [winmsg (size $ board w) (won (board w))]
+              else Pictures [grid w,
                             tiles w
                             ]
 
@@ -30,8 +30,6 @@ grid w = Pictures [square (x, y) w |
 -- square drawing :: starting position -> side -> picture drawn
 square :: Point -> World -> Picture
 square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
-                --Color sq_border $ Line
-                --    [(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y), (x,y)]
 
 menuBar :: Point -> World -> String -> Picture
 menuBar (x, y) w str = Pictures [translate x y $ (lineLoop (rectanglePath (bar_side1)
@@ -39,13 +37,11 @@ menuBar (x, y) w str = Pictures [translate x y $ (lineLoop (rectanglePath (bar_s
                               ((y - bar_side2/2) + bar_margin)
                               $ scale bar_text_scale bar_text_scale $ Text str)]
 
-
-
---[(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y), (x,y)])
-
-
 menu :: World -> Picture
-menu w = Pictures [(menuBar (0,50) w "Single Player - AI"), (menuBar (0,20) w "Multiplayer - Online"), (menuBar (0,-10) w "Multiplayer - Local"), (menuBar (0, -40) w "Quiterini")]
+menu w = Pictures [(menuBar (0,50) w "Single Player - AI"),
+                   (menuBar (0,20) w "Multiplayer - Online"),
+                   (menuBar (0,-10) w "Multiplayer - Local"),
+                   (menuBar (0, -40) w "Quiterini")]
 
 tiles :: World -> Picture
 tiles w = Pictures [tile w t | t <- pieces $ board w]

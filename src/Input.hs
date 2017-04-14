@@ -40,19 +40,21 @@ handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
     = trace ("handleInput to " ++ posToString (convx, convy)) (case makeMove (board w) (turn w) (convx, convy) of
         Just b ->  sendNet (w' b w) (convx, convy) -- updated world sendNet
         Nothing -> w  )-- same world
-        where  -- convert graphics coords to board coords
+        where
             sendNet w (x, y) = if (useNet (net_data w)) && ((human $ board w) /= turn w)  -- if we use the network and it was my turn
                                 then trace "sending move" unsafeDupablePerformIO $ sendMove w (x, y)           --    then send the move over the network
                                else trace "not sending move" w                                                     --  else just return the world
-            w' b w = World b (other (turn w)) "" (blacks w) (whites w) (cell w) False (Just w) (net_data w)
+            w' b w = World b (other (turn w)) "" (aion w) False (blacks w) (whites w) (cell w) False (Just w) (net_data w)
+            -- convert graphics coords to board coords
             convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side
             convy = round $ (y-wwh (size $ board w)-sq_side)/sq_side
+
 handleInput (EventKey (Char k) Down _ _) w
 --    = trace ("Key " ++ show k ++ " down") w
     = case k of
         '.'     -> trace ("cmd: ") $ w {cmd=""}  -- clear command
         '\b'    -> trace ("cmd: " ++ del) $ w{cmd=del}
-        '\SUB'  -> case prev w of
+        '\SUB'  -> case prev w of  -- Ctrl-Z ("Undo")
                         Nothing -> w
                         Just w' -> case prev w' of
                                         Nothing -> w'

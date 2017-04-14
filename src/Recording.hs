@@ -5,35 +5,64 @@ module Recording where
 Format:
 <size>\<color><row><column>...
 Example:
-08addo
+08adeo
 Means Board Size 8  (thus max board size is 99)
 BLACK plays in row a (=0), column d (=3)
-WHITE plays in row d (=3), column o (=14)
+WHITE plays in row d (=4), column o (=14)
 
 No need to save Black/White. Black goes first and they take turns.
-No need to save the target as we can assume taht the game is complete.
+No need to save the target as we can assume that the game is complete at end.
 If not complete -> load from save.
 -}
 
 app :: String -> ()
 app move = unsafeDupablePerformIO $ appendFile "recording.sgf" move
 
-readAll :: FilePath -> String
-readAll path = unsafeDupablePerformIO $ readFile "recording.sgf"
+readAll :: String
+readAll = unsafeDupablePerformIO $ readFile "recording.sgf"
 
-encodeMove :: Col -> Position -> String
-encodeMove color (x,y) = [color, r, c]  -- Player, Row, Column
-                         where  r = toEnum (x+97) :: Char
-                                c = toEnum (y+97) :: Char
+encodeMove :: Position -> String
+encodeMove (x,y) = [r, c]  -- Player, Row, Column
+                   where  r = toEnum (x+97) :: Char
+                          c = toEnum (y+97) :: Char
+
+decodeMove :: Col -> String -> (Position, Col)
+decodeMove color [r, c] = ((x, y), color)
+                          where x = fromEnum r -97  -- may need :: Int
+                                y = fromEnum c -97 -- :: Int
+
+decode :: String -> Col -> [(Position, Col)]
+decode [] _ = []
+decode str c = (decodeMove c (take 2 str)) : (decode (drop 2 str) (other c))
+
+decodeSize :: String -> Int
+decodeSize [a, b] = (read a :: Int)*10 + (read b :: Int)
+
+data Record = History { size :: Int,
+                        moves :: [(Position, Col)],
+                        moves_read :: Int  -- How many moves have been replayed
+                      }
+initRecord = History (decodeSize $ take 2 readAll) (decode (drop 2 readAll) Black) 0
+
+nextmove :: Record -> ((Position, Col), Record)
+nextmove r = (moves r !!moves_read, r{moves_read=moves_read r +1})  -- return the next move and increment the counter
 
 
-decodeMove :: Col -> String -> (Col, Position)
-decodeMove color [r, c] = (color, (x, y))
-                          where    x = fromEnum r -97  -- may need :: Int
-                                   y = fromEnum c -97 -- :: Int
+-- build worlds until a victory is reached
+-- use prev as 'next'
+buildSequence :: Record -> World -> World
+buildSequence r w = if won b then w
+                    else w{prev = nextw}
+                    where b = board w
+                          nextw = w' {prev = buildSequence r' w'}
+                          w' = w {board = case makeMove b c move of
+                                                  Just b' -> b'
+                                                  Nothing -> trace ("failed to replay:" ++ show c ++ show move) b
+                                 }
+                          ((move, c), r') = nextmove r
 
-decode :: String -> game??
-decode [] = undefined
--- decode first two characters as
+sequenceStart :: World -> World
+sequenceStart w = buildSequence initRecord w
 
+-- call updateWorld while decode length is not 0
 createFile = undefined  -- also wipes previous contents

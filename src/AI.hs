@@ -53,34 +53,28 @@ getBestMove :: Int -- ^ Maximum search depth
                -> GameTree -- ^ Initial game tree
                -> Col
                -> Position
-getBestMove maxdepth gt c = snd $ recurse maxdepth gt c
+getBestMove maxdepth gt c = snd $ recurse maxdepth best gt c
 
-recurse :: Int -> GameTree -> Col -> (Int, Position)
-recurse 0 gt c = best [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
-recurse d gt c = if (d `div` 2)* 2 == d then best options  -- ai plays on even depth
-                 else if (fst $ best options) == (target $ game_board gt) then best options  -- if a winning move is found
-                 else worst options  -- assumes the opponent's move will be the worst (for it) option
-                 where curr_values :: [(Int, Position)]  -- resultt of evaluating every possible board
-                       curr_values = [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
-                       next_values :: [(Int, Position)]  -- result of recursing down every node
-                       next_values = [recurse (d-1) nt c | (p, nt) <- next_moves gt]
-                       options :: [(Int, Position)]  -- taking the lower of the sub-tree and the current node
-                       options = [(min' cv nv, p) | ((nv, _),(cv, p)) <- zip next_values curr_values]
-                       min' a b = if a == 0- (target $ game_board gt) then a  -- if the game is already lost, it cannot get better
-                                  else if a == (target $ game_board gt) then a  -- if a means winning, then a
-                                  else min a b  -- else, the lower of the two
-                       -- this way it will detect if a move will eventually lead to a loss
+recurse :: Int -> Selector-> GameTree -> Col -> (Int, Position)
+recurse 0 select gt c = select [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
+recurse d select gt c = select options
+                        where   curr_values :: [(Int, Position)]  -- resultt of evaluating every possible board
+                                curr_values = [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
+                                next_values :: [(Int, Position)]  -- result of recursing down every node
+                                next_values = [recurse (d-1) (foeselector select) nt c | (p, nt) <- next_moves gt]
+                                options :: [(Int, Position)]  -- taking the lower of the sub-tree and the current node
+                                options = [(min' cv nv, p) | ((nv, _),(cv, p)) <- zip next_values curr_values]
+                                min' a b = if a == 0- (target $ game_board gt) then a  -- if the game is already lost, it cannot get better
+                                           else if a == (target $ game_board gt) then a  -- if a means winning, then a
+                                           else min a b  -- else, the lower of the two
+                                           -- this way it will detect if a move will eventually lead to a loss
 
-worst :: [(Int, Position)] -> (Int, Position)
-worst [] = trace "worst:NO MOVES???" (0, (0,0))
-worst [x] = trace "worst:One move??" x
-worst ips = foldr comp2 (head ips) (tail ips)
+type Selector = [(Int, Position)] -> (Int, Position)
+foeselector :: Selector -> Selector
+foeselector best = worst
+foeselector worst = best
 
-comp2 :: (Int, Position) -> (Int, Position) -> (Int, Position)
-comp2 (i1, p1) (i2, p2) = if i1 < i2 then (i1, p1)
-                          else (i2, p2)
-
-best :: [(Int, Position)] -> (Int, Position)
+best :: Selector  -- AI select the best move.
 best [] = trace "best:NO MOVES???" (0, (0,0))
 best [x] = trace "best:One move??" x
 best ips = foldr comp (head ips) (tail ips)  -- do a comparison, starting from the head and continuing with the tail
@@ -88,6 +82,15 @@ best ips = foldr comp (head ips) (tail ips)  -- do a comparison, starting from t
 comp :: (Int, Position) -> (Int, Position) -> (Int, Position)
 comp (i1, p1) (i2, p2) = if i1 > i2 then (i1, p1)
                          else (i2, p2)
+
+worst :: Selector  -- Opponent will always play the move that is worst for the AI.
+worst [] = trace "worst:NO MOVES???" (0, (0,0))
+worst [x] = trace "worst:One move??" x
+worst ips = foldr comp2 (head ips) (tail ips)
+
+comp2 :: (Int, Position) -> (Int, Position) -> (Int, Position)
+comp2 (i1, p1) (i2, p2) = if i1 < i2 then (i1, p1)
+                          else (i2, p2)
 
 posToString :: (Int, Int) -> String
 posToString (x, y) = "(" ++ show x ++ "," ++ show y ++ ")"
@@ -108,20 +111,24 @@ rcvMove w sock =  w { board = (board w) {pieces = (pieces (board w)) ++ [((x, y)
 updateWorld :: Float -- ^ time since last update (you can ignore this)
             -> World -- ^ current world state
             -> World
-updateWorld t w = waitForNet( w {board = (board w) {won = checkWon (board w)}, checked = True} )
-                        where waitForNet w = if (useNet (net_data w)) && ((human $ board w) /= turn w)      -- if we use the network and it is not my turn (w is world with switched turn)
-                                              then rcvMove w (eliminate (Board.socket (net_data w)))        --    then wait and recieve the next move
-                                             else w                                                         --  else just return the world
---if not $ checked w then  -- check winner
---                     w {board = (board w) {won = checkWon (board w)},
---                        checked = True}
---                  else (aiturn w) {checked = False}  -- otherwise the ai takes turn
+updateWorld t w =   if replayon w then prev w
+                    --else if network play then netplay_RENAME_ME
+                    else if aion w then aiturn w
+                    else w
+
+netplay_RENAME_ME w = waitForNet( w {board = (board w) {won = checkWon (board w)}} )
+                      where waitForNet w =
+                                -- if we use the network and it is not my turn (w is world with switched turn)
+                                if (useNet (net_data w)) && ((human $ board w) /= turn w)
+                                    -- then wait and recieve the next move
+                                    then rcvMove w (eliminate (Board.socket (net_data w)))
+                                else w  --  else just return the world
 
 aiturn :: World -> World
 aiturn w = if turn w == c then  -- if the ai is supposed to take turn
               w {board = case makeMove b c move  of
                               Just b'-> b'
-                              Nothing -> trace ("failed to make move:"++show move) $ board w,
+                              Nothing -> trace ("failed to make move:"++show move) b,
                  turn = human b, prev = Just w}
            else w -- otherwise do no change
            where b = board w
@@ -129,6 +136,15 @@ aiturn w = if turn w == c then  -- if the ai is supposed to take turn
                  gt = buildTree besideFilledCells b c
                  turnsToThinkAhead = 1  -- drastic slow down at 3, fast at 1
                  move = getBestMove turnsToThinkAhead gt c
+
+
+replay :: World -> World
+replay w = w {board = case makeMove b c move of
+                             Just b' -> b'
+                             Nothing -> trace ("failed to replay: " ++ show c ++ show move) b
+             }
+             where b = board w
+                   (move, c) = fst $ nextmove initRecord
 
 {- Hint: 'updateWorld' is where the AI gets called. If the world state
  indicates that it is a computer player's turn, updateWorld should use

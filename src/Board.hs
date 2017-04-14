@@ -29,13 +29,11 @@ type Position = (Int, Int)
 -- Constants
 sq_border :: Color
 sq_border = black
+sq_side = 50::Float
 bar_side1 = 210::Float
 bar_side2 = 20::Float
-
 bar_text_scale = 0.008*bar_side2
 bar_margin = 2::Float
-
-sq_side = 50::Float
 -- BS = Board Size
 win_size :: Int -> Int
 win_size bs = bs * (round sq_side::Int)
@@ -59,6 +57,7 @@ data Net_Data = Net_Data { useNet :: Bool,          -- if the network should be 
 
 initNet_Data = Net_Data False False Nothing "127.0.0.1" "5234"
 
+-- move human and fair to World?
 data Board = Board { size :: Int,
                      target :: Int,
                      human :: Col,
@@ -78,14 +77,14 @@ initBoard = Board 6 3 Black [] Nothing False
 -- Feel free to extend this, and 'Board' above with anything you think
 -- will be useful (information for the AI, for example, such as where the
 -- most recent moves were).
-data World = World {
-                     board :: Board,
+data World = World { board :: Board,
                      turn :: Col,
                      cmd :: String,
+                     aion :: Bool,
+                     replayon :: Bool,
                      blacks :: Picture,
                      whites :: Picture,
                      cell :: Picture,
-                     checked :: Bool,
                      prev :: Maybe World,
                      net_data :: Net_Data
                    }
@@ -95,12 +94,11 @@ pic :: World -> Col -> Picture
 pic w Black = blacks w
 pic w White = whites w
 
-initWorld = World initBoard Black ""
+initWorld = World initBoard Black "" True False
             (Color black $ circleSolid (sq_side/2))
             (Color white $ circleSolid (sq_side/2))
             (Color sq_border $ Line
                 [(x,y), (x,y+sq_side), (x+sq_side,y+sq_side), (x+sq_side,y), (x,y)])
-            False
             Nothing
             initNet_Data
               where (x,y) = (-sq_side/2,-sq_side/2)
@@ -115,7 +113,7 @@ makeMove :: Board -> Col -> Position -> Maybe Board
 makeMove b c (x,y) =  trace "clicked" (if outOfBounds b (x, y) || invalid then Nothing
                       else if won b /= Nothing then Nothing  -- Do not accept new moves, once there is a winner.
                       else if colOf b (x,y) == Nothing then
-                        Just b'--{won = checkWon b'}  -- Update winner after pieces.
+                        Just b'{won = checkWon b'}  -- Update winner after pieces.
                       else Nothing)
                             where b' = b{pieces = pieces b++[((x,y),c)]}  -- Update pieces first.
                                   invalid = not (checkRules b')
@@ -210,22 +208,29 @@ longest b c = max' $ map fst $  -- take the maximum length
 -- An evaluation function for a minimax search. Given a board and a colour
 -- return an integer indicating how good the board is for that colour.
 evaluate :: Board -> Col -> Int
-evaluate b c = longest b c
+evaluate b c = if won b == Just c then target b
+               else if won b == Just (other c) then -target b
+               else longest b c
 
--- can not be derived
---instance Serialize World
+
 instance Serialize Board
 instance Serialize Col
+-- Manually Serialize World because Picture serialization is not automatic, not needed.
+--instance Serialize World where
+--    put w   = put (board w, turn w, cmd w, aion w, replayon w, prev w, net_data w)
+--    get w   = get (board w, turn w, cmd w, aion w, replayon w, prev w, net_data w)
 
+-- update to save world
 save :: FilePath -> World -> IO World
 save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
                  return wd
 
-
+-- update to load world and to accept a world.
+-- Keep the images from the accepted world, change the other components to what was loaded
 load:: FilePath -> IO (Either String Board)
 load pth = do serBoard <- Data.ByteString.readFile pth
               return (decode serBoard)
 
--- Set true to enable menu
+-- Set True to enable menu
 isMenu:: World -> Bool
-isMenu wd = False
+isMenu wd = True
