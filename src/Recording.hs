@@ -22,10 +22,8 @@ Edwin said that the recording should be somewhat readable by another program.
 SZ[05]\nAB[df]\nAW[gh]\n
 -}
 
-sgf_file = "recording.sgf"
-
-readAll :: String
-readAll = unsafeDupablePerformIO $ readFile sgf_file
+readAll :: String -> String
+readAll filepath = unsafeDupablePerformIO $ readFile filepath
 
 encodeMove :: Col -> Position -> String
 encodeMove color (x,y) = ['A',p,'[',r, c,']','\n']  -- Player, Row, Column
@@ -55,7 +53,10 @@ data Record = History { bsize :: Int,
                         moves :: [(Position, Col)],
                         moves_read :: Int  -- How many moves have been replayed
                       }
-initRecord = History (decodeSize $ take 7 readAll) (decode (drop 7 readAll)) 0
+initRecord filepath = History
+                        (decodeSize $ take 7 $ readAll filepath)
+                        (decode (drop 7 $ readAll filepath))
+                        0
 
 -- return the next move and increment the counter
 nextmove :: Record -> ((Position, Col), Record)
@@ -76,24 +77,25 @@ buildSequence r w = if won b /= Nothing then w
                           ((move, c), r') = nextmove r
 
 sequenceStart :: World -> World
-sequenceStart w = buildSequence initRecord w
+sequenceStart w = buildSequence (initRecord path) w
+                  where path = case replay w of Just p' -> p'
 
 -- Writes the move to file and returns IO (second arg)
-writeMove :: (Position, Col) -> t -> IO t
-writeMove (pos, c) arg = do ignore <- appendFile sgf_file $ encodeMove c pos
-                            return arg
+writeMove :: String -> (Position, Col) -> t -> IO t
+writeMove filepath (pos, c) arg = do ignore <- appendFile filepath $ encodeMove c pos
+                                     return arg
 
 -- Writes the move to file and retuns its second argument.
 wrmv :: World -> (Position, Col) -> t -> t
-wrmv w m arg = if recording w then
-                    unsafeDupablePerformIO $ writeMove m arg
-               else arg
+wrmv w m arg = case recording w of
+                    Just path -> unsafeDupablePerformIO $ writeMove path m arg
+                    Nothing -> arg
 
-writeSize :: World -> IO World
-writeSize w = do ignore <- writeFile sgf_file $ encodeSize $ size $ board w
-                 return w
+writeSize :: String -> World -> IO World
+writeSize filepath w = do ignore <- writeFile filepath $ encodeSize $ size $ board w
+                          return w
 
 wrsz :: World -> World
-wrsz w = if recording w then
-                unsafeDupablePerformIO $ writeSize w
-         else w
+wrsz w = case recording w of
+              Just path ->  unsafeDupablePerformIO $ writeSize path w
+              Nothing ->w

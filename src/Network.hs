@@ -1,6 +1,8 @@
 module Network where
 
 import Board
+import Recording
+
 
 import Debug.Trace
 import System.IO.Unsafe

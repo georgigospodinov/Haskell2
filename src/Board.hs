@@ -82,8 +82,8 @@ data World = World { board :: Board,
                      turn :: Col,
                      cmd :: String,
                      aion :: Bool,
-                     replayon :: Bool,
-                     recording :: Bool,
+                     replay :: Maybe String,
+                     recording :: Maybe String,
                      blacks :: Picture,
                      whites :: Picture,
                      cell :: Picture,
@@ -97,7 +97,7 @@ pic w Black = blacks w
 pic w White = whites w
 
 
-initWorld = World initBoard Black "" True False False
+initWorld = World initBoard Black "" True Nothing Nothing
             (Color black $ circleSolid (sq_side/2))
             (Color white $ circleSolid (sq_side/2))
             (Color sq_border $ Line
@@ -220,8 +220,8 @@ instance Serialize Board
 instance Serialize Col
 -- Manually Serialize World because Picture serialization is not automatic, not needed.
 --instance Serialize World where
---    put w   = put (board w, turn w, cmd w, aion w, replayon w, prev w, net_data w)
---    get w   = get (board w, turn w, cmd w, aion w, replayon w, prev w, net_data w)
+--    put w   = put (board w, turn w, cmd w, aion w, replay w, recording w, prev w, net_data w)
+--    get w   = get (board w, turn w, cmd w, aion w, replay w, recording w, prev w, net_data w)
 
 -- update to save world
 save :: FilePath -> World -> IO World

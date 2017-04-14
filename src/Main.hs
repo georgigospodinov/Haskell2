@@ -35,10 +35,10 @@ parseArgument str w =   if startswith "size=" str then
                             w{ board = b {human = other $ read $ drop (length "computer=") str} }
                         else if startswith "ai-on=" str then
                             w{ aion = read $ drop (length "ai-on=") str }
-                        else if str == "replay" then
-                            w{ replayon = True }
-                        else if str == "recording" then
-                            w{ recording = True }
+                        else if startswith "replay=" str then
+                            w{ replay = Just $ drop (length "replay=") str }
+                        else if startswith "record=" str then
+                            w{ recording = Just $ drop (length "record=") str }
                         else w
                           where b = board w -- argument not recognized
 
@@ -57,13 +57,13 @@ main =  do
                 (ws x, ws x)                -- window size
                 (100, 100))                 -- window starting position on screen
             (light blue)                    -- background color
-            (if replayon w then 1 else 2)   -- 1 or 2 times per second 'updateWorld' is called
+            (if replay w /= Nothing then 1 else 2)   -- 1 or 2 times per second 'updateWorld' is called
             (startreplay $ w {blacks=black_piece,whites=white_piece,cell=cell_pic})
-                                            -- start replaying if replayon otherwise returns world
+                                            -- start replaying if replay not Nothing otherwise returns world
             drawWorld                       -- in Draw.hs : converts world to Gloss Picture
             handleInput                     -- in Input.hs: handles user input (eg. ctr+s, ...)
             updateWorld                     -- in AI.hs   : updates the world
             where ws w = win_size $ size $ board $ wrld w   -- calculates world size
                   wrld x = wrsz $ foldr parseArgument initWorld x  -- parses arguments
-                  startreplay w = if replayon w then sequenceStart w -- starts replay
+                  startreplay w = if replay w /= Nothing then sequenceStart w -- starts replay
                                   else w
