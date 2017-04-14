@@ -1,6 +1,10 @@
 module Recording where
 
---import Board
+import Board
+
+import Debug.Trace
+import System.IO.Unsafe
+
 {-
 Format:
 <size>\<color><row><column>...
@@ -27,7 +31,7 @@ encodeMove (x,y) = [r, c]  -- Player, Row, Column
                           c = toEnum (y+97) :: Char
 
 decodeMove :: Col -> String -> (Position, Col)
-decodeMove color [r, c] = ((x, y), color)
+decodeMove color (r:c:[]) = ((x, y), color)
                           where x = fromEnum r -97  -- may need :: Int
                                 y = fromEnum c -97 -- :: Int
 
@@ -35,26 +39,26 @@ decode :: String -> Col -> [(Position, Col)]
 decode [] _ = []
 decode str c = (decodeMove c (take 2 str)) : (decode (drop 2 str) (other c))
 
-decodeSize :: String -> Int
-decodeSize [a, b] = (read a :: Int)*10 + (read b :: Int)
+decodeSize :: [Char] -> Int
+decodeSize (a:b:[]) = (read [a] :: Int)*10 + (read [b] :: Int)
 
-data Record = History { size :: Int,
+data Record = History { bsize :: Int,
                         moves :: [(Position, Col)],
                         moves_read :: Int  -- How many moves have been replayed
                       }
 initRecord = History (decodeSize $ take 2 readAll) (decode (drop 2 readAll) Black) 0
 
 nextmove :: Record -> ((Position, Col), Record)
-nextmove r = (moves r !!moves_read, r{moves_read=moves_read r +1})  -- return the next move and increment the counter
+nextmove r = ((moves r) !!(moves_read r), r{moves_read=moves_read r +1})  -- return the next move and increment the counter
 
 
 -- build worlds until a victory is reached
 -- use prev as 'next'
 buildSequence :: Record -> World -> World
-buildSequence r w = if won b then w
-                    else w{prev = nextw}
+buildSequence r w = if won b /= Nothing then w
+                    else w{prev = Just nextw}
                     where b = board w
-                          nextw = w' {prev = buildSequence r' w'}
+                          nextw = w' {prev = Just $ buildSequence r' w'}
                           w' = w {board = case makeMove b c move of
                                                   Just b' -> b'
                                                   Nothing -> trace ("failed to replay:" ++ show c ++ show move) b

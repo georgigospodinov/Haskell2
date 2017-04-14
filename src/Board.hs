@@ -110,7 +110,7 @@ outOfBounds b (x,y) = x < 0 || y < 0 || x >= size b -1 || y >= size b -1
 -- Play a move on the board; return 'Nothing' if the move is invalid
 -- (e.g. outside the range of the board, or there is a piece already there)
 makeMove :: Board -> Col -> Position -> Maybe Board
-makeMove b c (x,y) =  trace "clicked" (if outOfBounds b (x, y) || invalid then Nothing
+makeMove b c (x,y) =  (if outOfBounds b (x, y) || invalid then Nothing
                       else if won b /= Nothing then Nothing  -- Do not accept new moves, once there is a winner.
                       else if colOf b (x,y) == Nothing then
                         Just b'{won = checkWon b'}  -- Update winner after pieces.
@@ -233,4 +233,4 @@ load pth = do serBoard <- Data.ByteString.readFile pth
 
 -- Set True to enable menu
 isMenu:: World -> Bool
-isMenu wd = True
+isMenu wd = False

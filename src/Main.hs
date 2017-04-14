@@ -17,6 +17,7 @@ import Board
 import Draw
 import Input
 import AI
+import Recording
 
 -- 'play' starts up a graphics window and sets up handlers for dealing
 -- with inputs and updating the world state.
@@ -117,14 +118,14 @@ main =  do
                 (100, 100)  -- window starting position on screen
             )
             gray  -- background color
-            (if replay w then 1 else 2)  -- times per second 'updateWorld' is called
+            (if replayon w then 1 else 2)  -- times per second 'updateWorld' is called
             (startreplay $ w {blacks=black_piece,whites=white_piece,cell=cell_pic})
             drawWorld -- in Draw.hs
             handleInput -- in Input.hs
             updateWorld -- in AI.hs
             where ws w = win_size $ size $ board $ wrld w
                   wrld x = foldr parseArgument initWorld x
-                  startreplay w = if replay w then sequenceStart w
+                  startreplay w = if replayon w then sequenceStart w
                                   else w
 
 

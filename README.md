@@ -28,7 +28,8 @@ computer=..  # Same as "ai=.."
 server=True  # Using a network opponent and starting this game as the server  
 server=False # Using a network opponent and starting this game as the client  
              # leave server out to launch non-network game  
-i
+addr=192...  # specify internet address to connect to
+port=4242    # specifiy port to use
   
 ### Conflicting options 
 When mutliple options were set with conflicting Colour assignments, only the first option is used.  

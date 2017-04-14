@@ -1,6 +1,7 @@
 module AI where
 
 import Board
+import Recording
 
 import Debug.Trace
 import Data.List
@@ -111,13 +112,16 @@ rcvMove w sock =  w { board = (board w) {pieces = (pieces (board w)) ++ [((x, y)
 updateWorld :: Float -- ^ time since last update (you can ignore this)
             -> World -- ^ current world state
             -> World
-updateWorld t w =   if replayon w then prev w
-                    --else if network play then netplay_RENAME_ME
+updateWorld t w =   if replayon w then
+                        case prev w of
+                              Just w' -> w'
+                              Nothing -> trace "End of replay?" w
+                    else if useNet (net_data w) then waitForNet w
                     else if aion w then aiturn w
                     else w
 
-netplay_RENAME_ME w = waitForNet( w {board = (board w) {won = checkWon (board w)}} )
-                      where waitForNet w =
+waitForNet w = wait( w {board = (board w) {won = checkWon (board w)}} )
+                      where wait w =
                                 -- if we use the network and it is not my turn (w is world with switched turn)
                                 if (useNet (net_data w)) && ((human $ board w) /= turn w)
                                     -- then wait and recieve the next move

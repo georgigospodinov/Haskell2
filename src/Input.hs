@@ -44,7 +44,7 @@ handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
             sendNet w (x, y) = if (useNet (net_data w)) && ((human $ board w) /= turn w)  -- if we use the network and it was my turn
                                 then trace "sending move" unsafeDupablePerformIO $ sendMove w (x, y)           --    then send the move over the network
                                else trace "not sending move" w                                                     --  else just return the world
-            w' b w = World b (other (turn w)) "" (aion w) False (blacks w) (whites w) (cell w) False (Just w) (net_data w)
+            w' b w = World b (other (turn w)) "" (aion w) False (blacks w) (whites w) (cell w) (Just w) (net_data w)
             -- convert graphics coords to board coords
             convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side
             convy = round $ (y-wwh (size $ board w)-sq_side)/sq_side
