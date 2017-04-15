@@ -10,6 +10,7 @@ import Board
 import Menu
 import Network
 import Recording
+import AI
 
 {- | Function updates the world state given an input event.
       Mouse-click     : converts the x,y coordinates to the corresponding row,col
@@ -54,9 +55,7 @@ handleInput (EventKey (Char k) Down _ _) w
                                         Just w'' -> w''
         '\DC3'  -> trace "INFO - Saving Game in 'save.dat'" $ unsafeDupablePerformIO $ save "save.dat" w
                                                           -- Ctrl+s saves game
-        '\f'    -> if isRight w' then w' -- Ctrl+l loades game
-                   else trace (fromLeft w') w
-                   where w' = trace "INFO - Loading Game from 'save.dat'" $ unsafeDupablePerformIO $ load "save.dat"
+        '\f'    -> unsafeDupablePerformIO $ load w "save.dat"
         _       -> trace ("cmd: " ++ app) $ w {cmd=app}
         where
             app = cmd w ++ [k]                            -- append character

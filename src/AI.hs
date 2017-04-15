@@ -162,7 +162,7 @@ removeDuplicates (x:xs) | x `elem` xs = removeDuplicates xs
                         | otherwise = x : removeDuplicates xs
 
 hint :: World -> World
-hint w = trace ("Hint: " ++ show $ getBestMove 0 gt c) w
+hint w = trace ("Hint: " ++ (show $ getBestMove 0 gt c)) w
          where gt = buildTree besideFilledCells b c
                b = board w
                c = human b

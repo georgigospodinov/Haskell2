@@ -8,6 +8,9 @@ import Data.Serialize
 import Data.ByteString (writeFile, readFile)
 import GHC.Generics
 import Network.Socket
+import Data.Either.Unwrap
+
+import System.IO.Unsafe
 
 import Debug.Trace
 
@@ -220,19 +223,18 @@ instance Serialize Board
 instance Serialize Col
 -- Manually Serialize World because Picture serialization is not automatic, not needed.
 instance Serialize World where
-    put w   = put (board w, turn w, cmd w, aion w, recording w, prev w, net_data w)
+    put w   = put (board w, turn w, cmd w, aion w, recording w, prev w)
     get     = do board  <- get
                  turn   <- get
                  cmd    <- get
                  aion   <- get
                  recording  <- get
-                 blacks <- loadBMP "src/img/black.bmp"
-                 whites <- loadBMP "src/img/white.bmp"
-                 cell <- loadBMP "src/img/gomoku-part.bmp"
+                --  blacks <- get unsafeDupablePerformIO $ loadBMP "src/img/black.bmp"
+                --  whites <- get unsafeDupablePerformIO $ loadBMP "src/img/white.bmp"
+                --  cell <- get unsafeDupablePerformIO $ loadBMP "src/img/gomoku-part.bmp"
                  prev   <- get
-                 net_data   <- get
                  return (World board turn cmd aion Nothing recording False
-                            blacks whites cell prev net_data)
+                            (blacks initWorld) (whites initWorld) (cell initWorld) prev (net_data initWorld))
 
 -- update to save world
 save :: FilePath -> World -> IO World
@@ -240,9 +242,19 @@ save pth wd = do Data.ByteString.writeFile pth (encode wd)
                  putStrLn "OK - Game Saved."
                  return wd
 
+-- if isRight w' then w' -- Ctrl+l loades game
+-- else trace (fromLeft w') w
+-- where w' = trace "INFO - Loading Game from 'save.dat'" $ unsafeDupablePerformIO $ load "save.dat"
+
 -- update to load world and to accept a world.
 -- Keep the images from the accepted world, change the other components to what was loaded
-load:: FilePath -> IO (Either String World)
-load pth = do serWorld <- Data.ByteString.readFile pth
-              putStrLn "OK - Game Loaded."
-              return (decode serWorld)
+load:: World -> FilePath -> IO World
+load w pth = do serWorld <- Data.ByteString.readFile pth
+                bl <- loadBMP "src/img/black.bmp"
+                wh <- loadBMP "src/img/white.bmp"
+                cl <- loadBMP "src/img/gomoku-part.bmp"
+                putStrLn "OK - Game Loaded."
+                let w' = (decode serWorld) in
+                  if isRight w' then
+                    return (fromRight w') {blacks=bl, whites=wh, cell=cl}
+                  else return w
