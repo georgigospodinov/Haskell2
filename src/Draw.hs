@@ -2,18 +2,9 @@ module Draw where
 
 import Graphics.Gloss
 import Board
+import Menu
 
 import Debug.Trace
-
-data Menu = Menu { entries :: [MenuEntry] }
-
-data MenuEntry = MenuEntry { menuDraw :: Picture,
-                     func :: (World -> World)
-                   }
-
-initMenu = Menu [singlePlayerEntry]
-
-singlePlayerEntry = MenuEntry (menuBar (0,50) "Single Player - AI") singlePlayerChoice
 
 {-| Given a world state, return a Picture which will render the world state.
     This will need to extract the Board from the world state and draw it
@@ -44,18 +35,6 @@ square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
 
 drawMenu :: Menu -> Picture
 drawMenu m = Pictures [menu_draw x | x <- (entries m)]
-
-menuBar :: Point -> String -> Picture
-menuBar (x, y) str = Pictures [(menuBox (x, y)), (menuText (x, y) str)]
-
-menuBox :: Point -> Picture
-menuBox (x, y) = translate x y $ Pictures [(Color (makeColor 190 200 255 100) $ polygon (rectanglePath (bar_side1) (bar_side2))), lineLoop (rectanglePath (bar_side1) (bar_side2))]
-
-menuText :: Point -> String -> Picture
-menuText (x, y) str = (translate ((x - bar_side1/2) + bar_margin)
-                              ((y - bar_side2/2) + bar_margin)
-                              $ scale bar_text_scale bar_text_scale $ Text str)
-
 
 tiles :: World -> Picture
 tiles w = Pictures [tile w t | t <- pieces $ board w]

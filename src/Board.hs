@@ -236,13 +236,3 @@ load:: FilePath -> IO (Either String Board)
 load pth = do serBoard <- Data.ByteString.readFile pth
               putStrLn "OK - Game Loaded."
               return (decode serBoard)
-
--- Set True to enable menu
-isMenu:: World -> Bool
-isMenu wd = False
-
-singlePlayerChoice:: World -> World
-singlePlayerChoice w = w {aion = True}
-
--- multiPlayerChoiceHost:: World -> World
--- singlePlayerChoice w = w{ net_data = (net_data w) { useNet = True , isServ = True}, board = b { human = (if (read $ drop (length "server=") str) then Black else White) } }
