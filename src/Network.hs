@@ -52,6 +52,9 @@ setupNetworking w = do if (useNet (net_data w)) then
                                   return w'
                        else return w
 
+unsafeSetupNetworking :: World -> World
+unsafeSetupNetworking w = unsafeDupablePerformIO $ setupNetworking w
+
 serverSetup :: String -> IO Socket
 serverSetup prt = do
                addrinfos <- getAddrInfo

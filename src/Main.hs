@@ -16,32 +16,32 @@ import Update
     README.md for further details. -}
 parseArgument :: String -> World -> World
 parseArgument str w =   if startswith "size=" str then
-                            w{ board = b {size = read $ drop (length "size=") str} }
+                            w'{ board = b {size = read $ drop (length "size=") str} }
                         else if startswith "target=" str then
-                            w{ board = b {target = read $ drop (length "target=") str} }
+                            w'{ board = b {target = read $ drop (length "target=") str} }
                         else if startswith "server=" str then
-                            w{ net_data = (net_data w) { useNet = True , isServ = read $ drop (length "server=") str }, board = b { human = (if (read $ drop (length "server=") str) then Black else White) } }
+                            w'{ net_data = (net_data w) { useNet = True , isServ = read $ drop (length "server=") str }, board = b { human = (if (read $ drop (length "server=") str) then Black else White) } }
                         else if startswith "addr=" str then
-                            w{ net_data = (net_data w) { addr = drop (length "addr=") str} }
+                            w'{ net_data = (net_data w) { addr = drop (length "addr=") str} }
                         else if startswith "port=" str then
-                            w{ net_data = (net_data w) { port = drop (length "port=") str} }
+                            w'{ net_data = (net_data w) { port = drop (length "port=") str} }
                         else if startswith "fair=" str then
-                            w{ board = b {fair = read $ drop (length "fair=") str} }
+                            w'{ board = b {fair = read $ drop (length "fair=") str} }
                         else if startswith "human=" str then
-                            w{ board = b {human = read $ drop (length "human=") str} }
+                            w'{ board = b {human = read $ drop (length "human=") str} }
                         else if startswith "ai=" str then
-                            w{ board = b {human = other $ read $ drop (length "ai=") str} }
+                            w'{ board = b {human = other $ read $ drop (length "ai=") str} }
                         else if startswith "computer=" str then
-                            w{ board = b {human = other $ read $ drop (length "computer=") str} }
+                            w'{ board = b {human = other $ read $ drop (length "computer=") str} }
                         else if startswith "ai-on=" str then
-                            w{ aion = read $ drop (length "ai-on=") str }
+                            w'{ aion = read $ drop (length "ai-on=") str }
                         else if startswith "replay=" str then
-                            w{ replay = Just $ drop (length "replay=") str }
+                            w'{ replay = Just $ drop (length "replay=") str }
                         else if startswith "record=" str then
-                            w{ recording = Just $ drop (length "record=") str }
+                            w'{ recording = Just $ drop (length "record=") str }
                         else w
                           where b = board w -- argument not recognized
-
+                                w' = w {is_menu=False}
 {- | Main method sets up world using any program arguments, sets up networking
      if needed, loads bmp pictures and configures the Gloss play function. -}
 main :: IO ()

@@ -19,7 +19,7 @@ singlePlayerEntry = MenuEntry (menuBar (0,50) "Single Player - AI") singlePlayer
     This will need to extract the Board from the world state and draw it
     as a grid plus pieces. -}
 drawWorld :: World -> Picture
-drawWorld w = if isMenu w then Pictures [drawMenu initMenu]
+drawWorld w = if is_menu w then Pictures [drawMenu initMenu]
               else if (won $ board w) /= Nothing then
                     Pictures [winmsg (size $ board w) (won (board w))]
               else Pictures [grid w,
@@ -40,6 +40,11 @@ grid w = Pictures [square (x, y) w |
 square :: Point -> World -> Picture
 square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
 
+
+
+drawMenu :: Menu -> Picture
+drawMenu m = Pictures [menu_draw x | x <- (entries m)]
+
 menuBar :: Point -> String -> Picture
 menuBar (x, y) str = Pictures [(menuBox (x, y)), (menuText (x, y) str)]
 
@@ -51,15 +56,6 @@ menuText (x, y) str = (translate ((x - bar_side1/2) + bar_margin)
                               ((y - bar_side2/2) + bar_margin)
                               $ scale bar_text_scale bar_text_scale $ Text str)
 
-
-drawMenu :: Menu -> Picture
-drawMenu m = Pictures [menuDraw x | x <- (entries m)]
-
--- drawMenu :: World -> Picture
--- drawMenu w = Pictures [(menuBar (0,50) "Single Player - AI"),
---                    (menuBar (0,20) "Multiplayer - Online"),
---                    (menuBar (0,-10) "Multiplayer - Local"),
---                    (menuBar (0, -40) "Quit")]
 
 tiles :: World -> Picture
 tiles w = Pictures [tile w t | t <- pieces $ board w]
