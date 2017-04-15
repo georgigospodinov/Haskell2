@@ -38,6 +38,11 @@ bar_side2 = 20::Float
 bar_text_scale = 0.008*bar_side2
 bar_margin = 2::Float
 
+win_side1 = 140::Float
+win_side2 = 25::Float
+win_text_scale = 0.008*win_side2
+win_margin = 2::Float
+
 -- BS = Board Size
 win_size :: Int -> Int
 win_size bs = bs * (round sq_side::Int)

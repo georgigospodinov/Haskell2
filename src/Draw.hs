@@ -45,8 +45,18 @@ tile w ((x, y), c) = translate xtranslation ytranslation $ pic w c
                            ytranslation = (fromIntegral y*sq_side+wwh bs+sq_side)
                            bs = size $ board w
 
+
+winBox :: Point -> Picture
+winBox (x, y) = translate x y $ Pictures [(Color (makeColor 190 200 255 100) $ polygon (rectanglePath (win_side1) (win_side2))), lineLoop (rectanglePath (win_side1) (win_side2))]
+
 winmsg :: Int -> (Maybe Col) -> Picture
 winmsg bs Nothing = Text ""
 winmsg bs (Just c)
-  | c == Black = translate (wwh bs) 0 $ Text "Black Wins"
-  | c == White = translate (wwh bs) 0 $ Text "White Wins"
+  | c == Black = Pictures [winBox (0, 0), (winText (0, 0) "Black Wins")]
+  | c == White = Pictures [winBox (0, 0), (winText (0, 0) "White Wins")]
+
+
+winText :: Point -> String -> Picture
+winText (x, y) str = (translate ((x - win_side1/2) + win_margin)
+                              ((y - win_side2/2) + win_margin)
+                              $ scale win_text_scale win_text_scale $ Text str)

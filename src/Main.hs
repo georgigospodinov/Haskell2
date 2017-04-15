@@ -56,7 +56,7 @@ main =  do
             (InWindow "Gomoku"              -- window title
                 (ws x, ws x)                -- window size
                 (100, 100))                 -- window starting position on screen
-            (light blue)                    -- background color
+            (light red)                    -- background color
             (if replay w /= Nothing then 1 else 2)   -- 1 or 2 times per second 'updateWorld' is called
             (startreplay $ w {blacks=black_piece,whites=white_piece,cell=cell_pic})
                                             -- start replaying if replay not Nothing otherwise returns world
