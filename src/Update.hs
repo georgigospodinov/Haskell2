@@ -7,7 +7,7 @@ import AI
 import Debug.Trace
 import System.IO.Unsafe
 
--- Update the world state after some time has passed
+-- | Update the world state after some time has passed
 updateWorld :: Float -- ^ time since last update (you can ignore this)
             -> World -- ^ current world state
             -> World
