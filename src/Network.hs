@@ -1,6 +1,8 @@
 module Network where
 
 import Board
+import Recording
+
 
 import Debug.Trace
 import System.IO.Unsafe
@@ -32,10 +34,12 @@ rcvMsg :: Socket -> String
 rcvMsg sock = C.unpack $ unsafeDupablePerformIO $ Network.Socket.ByteString.recv sock 1024
 
 rcvMove :: World -> Socket -> World
-rcvMove w sock =  w { board = (board w) {pieces = (pieces (board w)) ++ [((x, y), c)]}, turn = (other $ turn w)} --trace ("Received " ++ posToString (x, y))
-         where (x, y) = stringToPos msg
-               msg    = rcvMsg sock
-               c      = turn w
+rcvMove w sock = wrmv w (pos, c) $
+                    w { board = (board w) {pieces = (pieces (board w)) ++ [(pos, c)]},
+                        turn = (other $ turn w)} --trace ("Received " ++ posToString pos)
+                 where pos = stringToPos msg
+                       msg = rcvMsg sock
+                       c   = turn w
 
 setupNetworking :: World -> IO World
 setupNetworking w = do if (useNet (net_data w)) then
@@ -47,6 +51,9 @@ setupNetworking w = do if (useNet (net_data w)) then
                                   let w' = w { net_data = (net_data w) { Board.socket = Just sock } }
                                   return w'
                        else return w
+
+unsafeSetupNetworking :: World -> World
+unsafeSetupNetworking w = unsafeDupablePerformIO $ setupNetworking w
 
 serverSetup :: String -> IO Socket
 serverSetup prt = do

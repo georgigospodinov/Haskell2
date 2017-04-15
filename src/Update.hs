@@ -11,7 +11,7 @@ import System.IO.Unsafe
 updateWorld :: Float -- ^ time since last update (you can ignore this)
             -> World -- ^ current world state
             -> World
-updateWorld t w =   if replayon w then
+updateWorld t w =   if replay w /= Nothing then
                         case prev w of
                               Just wrld -> wrld
                               Nothing -> trace "End of replay?" w

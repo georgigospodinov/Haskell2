@@ -8,6 +8,9 @@ import Data.Serialize
 import Data.ByteString (writeFile, readFile)
 import GHC.Generics
 import Network.Socket
+import Data.Either.Unwrap
+
+import System.IO.Unsafe
 
 import Debug.Trace
 
@@ -34,6 +37,12 @@ bar_side1 = 210::Float
 bar_side2 = 20::Float
 bar_text_scale = 0.008*bar_side2
 bar_margin = 2::Float
+
+win_side1 = 140::Float
+win_side2 = 25::Float
+win_text_scale = 0.008*win_side2
+win_margin = 2::Float
+
 -- BS = Board Size
 win_size :: Int -> Int
 win_size bs = bs * (round sq_side::Int)
@@ -57,7 +66,6 @@ data Net_Data = Net_Data { useNet :: Bool,          -- if the network should be 
 
 initNet_Data = Net_Data False False Nothing "127.0.0.1" "5234"
 
--- move human and fair to World?
 data Board = Board { size :: Int,
                      target :: Int,
                      human :: Col,
@@ -81,7 +89,9 @@ data World = World { board :: Board,
                      turn :: Col,
                      cmd :: String,
                      aion :: Bool,
-                     replayon :: Bool,
+                     replay :: Maybe String,
+                     recording :: Maybe String,
+                     is_menu :: Bool,
                      blacks :: Picture,
                      whites :: Picture,
                      cell :: Picture,
@@ -94,7 +104,8 @@ pic :: World -> Col -> Picture
 pic w Black = blacks w
 pic w White = whites w
 
-initWorld = World initBoard Black "" True False
+
+initWorld = World initBoard Black "" True Nothing Nothing True
             (Color black $ circleSolid (sq_side/2))
             (Color white $ circleSolid (sq_side/2))
             (Color sq_border $ Line
@@ -216,23 +227,39 @@ evaluate b c = if won b == Just c then target b
 instance Serialize Board
 instance Serialize Col
 -- Manually Serialize World because Picture serialization is not automatic, not needed.
---instance Serialize World where
---    put w   = put (board w, turn w, cmd w, aion w, replayon w, prev w, net_data w)
---    get w   = get (board w, turn w, cmd w, aion w, replayon w, prev w, net_data w)
+instance Serialize World where
+    put w   = put (board w, turn w, cmd w, aion w, recording w, prev w)
+    get     = do board  <- get
+                 turn   <- get
+                 cmd    <- get
+                 aion   <- get
+                 recording  <- get
+                --  blacks <- get unsafeDupablePerformIO $ loadBMP "src/img/black.bmp"
+                --  whites <- get unsafeDupablePerformIO $ loadBMP "src/img/white.bmp"
+                --  cell <- get unsafeDupablePerformIO $ loadBMP "src/img/gomoku-part.bmp"
+                 prev   <- get
+                 return (World board turn cmd aion Nothing recording False
+                            (blacks initWorld) (whites initWorld) (cell initWorld) prev (net_data initWorld))
 
 -- update to save world
 save :: FilePath -> World -> IO World
-save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
+save pth wd = do Data.ByteString.writeFile pth (encode wd)
                  putStrLn "OK - Game Saved."
                  return wd
 
+-- if isRight w' then w' -- Ctrl+l loades game
+-- else trace (fromLeft w') w
+-- where w' = trace "INFO - Loading Game from 'save.dat'" $ unsafeDupablePerformIO $ load "save.dat"
+
 -- update to load world and to accept a world.
 -- Keep the images from the accepted world, change the other components to what was loaded
-load:: FilePath -> IO (Either String Board)
-load pth = do serBoard <- Data.ByteString.readFile pth
-              putStrLn "OK - Game Loaded."
-              return (decode serBoard)
-
--- Set True to enable menu
-isMenu:: World -> Bool
-isMenu wd = False
+load:: World -> FilePath -> IO World
+load w pth = do serWorld <- Data.ByteString.readFile pth
+                bl <- loadBMP "src/img/black.bmp"
+                wh <- loadBMP "src/img/white.bmp"
+                cl <- loadBMP "src/img/gomoku-part.bmp"
+                putStrLn "OK - Game Loaded."
+                let w' = (decode serWorld) in
+                  if isRight w' then
+                    return (fromRight w') {blacks=bl, whites=wh, cell=cl}
+                  else return w

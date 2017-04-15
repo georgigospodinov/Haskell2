@@ -6,50 +6,61 @@ import Debug.Trace
 import System.IO.Unsafe
 
 {-
-Format:
-<size>\<color><row><column>...
-Example:
-08adeo
-Means Board Size 8  (thus max board size is 99)
-BLACK plays in row a (=0), column d (=3)
-WHITE plays in row d (=4), column o (=14)
+--Format:
+--<size>\<color><row><column>...
+--Example:
+--08adeo
+--Means Board Size 8  (thus max board size is 99)
+--BLACK plays in row a (=0), column d (=3)
+--WHITE plays in row d (=4), column o (=14)
+--
+--No need to save Black/White. Black goes first and they take turns.
+--No need to save the target as we can assume that the game is complete at end.
+--If not complete -> load from save.
 
-No need to save Black/White. Black goes first and they take turns.
-No need to save the target as we can assume that the game is complete at end.
-If not complete -> load from save.
+Edwin said that the recording should be somewhat readable by another program.
+SZ[05]\nAB[df]\nAW[gh]\n
 -}
 
-app :: String -> ()
-app move = unsafeDupablePerformIO $ appendFile "recording.sgf" move
+readAll :: String -> String
+readAll filepath = unsafeDupablePerformIO $ readFile filepath
 
-readAll :: String
-readAll = unsafeDupablePerformIO $ readFile "recording.sgf"
+encodeMove :: Col -> Position -> String
+encodeMove color (x,y) = ['A',p,'[',r, c,']','\n']  -- Player, Row, Column
+                         where  r = toEnum (x+97) :: Char
+                                c = toEnum (y+97) :: Char
+                                p = if color == Black then 'B' else 'W'
 
-encodeMove :: Position -> String
-encodeMove (x,y) = [r, c]  -- Player, Row, Column
-                   where  r = toEnum (x+97) :: Char
-                          c = toEnum (y+97) :: Char
+decodeMove :: String -> (Position, Col)
+decodeMove ('A':p:'[':r:c:']':'\n':[]) = ((x, y), color)
+                                         where x = fromEnum r -97  -- may need :: Int
+                                               y = fromEnum c -97 -- :: Int
+                                               color = if p == 'B' then Black else White
 
-decodeMove :: Col -> String -> (Position, Col)
-decodeMove color (r:c:[]) = ((x, y), color)
-                          where x = fromEnum r -97  -- may need :: Int
-                                y = fromEnum c -97 -- :: Int
+decode :: String -> [(Position, Col)]
+decode [] = []
+decode str = (decodeMove (take 7 str)) : (decode (drop 7 str))
 
-decode :: String -> Col -> [(Position, Col)]
-decode [] _ = []
-decode str c = (decodeMove c (take 2 str)) : (decode (drop 2 str) (other c))
+encodeSize :: Int -> String
+encodeSize x = "SZ["++a++b++"]\n"
+               where a = show $ x `div` 10
+                     b = show $ x `mod` 10
 
-decodeSize :: [Char] -> Int
-decodeSize (a:b:[]) = (read [a] :: Int)*10 + (read [b] :: Int)
+decodeSize :: String -> Int
+decodeSize ('S':'Z':'[':a:b:']':'\n':[]) = (read [a] :: Int)*10 + (read [b] :: Int)
 
 data Record = History { bsize :: Int,
                         moves :: [(Position, Col)],
                         moves_read :: Int  -- How many moves have been replayed
                       }
-initRecord = History (decodeSize $ take 2 readAll) (decode (drop 2 readAll) Black) 0
+initRecord filepath = History
+                        (decodeSize $ take 7 $ readAll filepath)
+                        (decode (drop 7 $ readAll filepath))
+                        0
 
+-- return the next move and increment the counter
 nextmove :: Record -> ((Position, Col), Record)
-nextmove r = ((moves r) !!(moves_read r), r{moves_read=moves_read r +1})  -- return the next move and increment the counter
+nextmove r = ((moves r) !!(moves_read r), r{moves_read=moves_read r +1})
 
 
 -- build worlds until a victory is reached
@@ -66,15 +77,25 @@ buildSequence r w = if won b /= Nothing then w
                           ((move, c), r') = nextmove r
 
 sequenceStart :: World -> World
-sequenceStart w = buildSequence initRecord w
+sequenceStart w = buildSequence (initRecord path) w
+                  where path = case replay w of Just p' -> p'
 
--- call updateWorld while decode length is not 0
-createFile = undefined  -- also wipes previous contents
+-- Writes the move to file and returns IO (second arg)
+writeMove :: String -> (Position, Col) -> t -> IO t
+writeMove filepath (pos, c) arg = do ignore <- appendFile filepath $ encodeMove c pos
+                                     return arg
 
-replay :: World -> World
-replay w = w {board = case makeMove b c move of
-                             Just b' -> b'
-                             Nothing -> trace ("failed to replay: " ++ show c ++ show move) b
-             }
-             where b = board w
-                   (move, c) = fst $ nextmove initRecord
+-- Writes the move to file and retuns its second argument.
+wrmv :: World -> (Position, Col) -> t -> t
+wrmv w m arg = case recording w of
+                    Just path -> unsafeDupablePerformIO $ writeMove path m arg
+                    Nothing -> arg
+
+writeSize :: String -> World -> IO World
+writeSize filepath w = do ignore <- writeFile filepath $ encodeSize $ size $ board w
+                          return w
+
+wrsz :: World -> World
+wrsz w = case recording w of
+              Just path ->  unsafeDupablePerformIO $ writeSize path w
+              Nothing ->w

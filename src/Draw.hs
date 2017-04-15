@@ -2,6 +2,7 @@ module Draw where
 
 import Graphics.Gloss
 import Board
+import Menu
 
 import Debug.Trace
 
@@ -9,7 +10,7 @@ import Debug.Trace
     This will need to extract the Board from the world state and draw it
     as a grid plus pieces. -}
 drawWorld :: World -> Picture
-drawWorld w = if isMenu w then Pictures [menu w]
+drawWorld w = if is_menu w then Pictures [drawMenu currentMenu]
               else if (won $ board w) /= Nothing then
                     Pictures [winmsg (size $ board w) (won (board w))]
               else Pictures [grid w,
@@ -30,17 +31,10 @@ grid w = Pictures [square (x, y) w |
 square :: Point -> World -> Picture
 square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
 
-menuBar :: Point -> World -> String -> Picture
-menuBar (x, y) w str = Pictures [translate x y $ (lineLoop (rectanglePath (bar_side1)
-                              (bar_side2))), (translate ((x - bar_side1/2) + bar_margin)
-                              ((y - bar_side2/2) + bar_margin)
-                              $ scale bar_text_scale bar_text_scale $ Text str)]
 
-menu :: World -> Picture
-menu w = Pictures [(menuBar (0,50) w "Single Player - AI"),
-                   (menuBar (0,20) w "Multiplayer - Online"),
-                   (menuBar (0,-10) w "Multiplayer - Local"),
-                   (menuBar (0, -40) w "Quiterini")]
+
+drawMenu :: Menu -> Picture
+drawMenu m = Pictures ([menu_draw x | x <- (entries m)] ++ [decoration_draw x | x <- (decorations m)])
 
 tiles :: World -> Picture
 tiles w = Pictures [tile w t | t <- pieces $ board w]
@@ -51,8 +45,18 @@ tile w ((x, y), c) = translate xtranslation ytranslation $ pic w c
                            ytranslation = (fromIntegral y*sq_side+wwh bs+sq_side)
                            bs = size $ board w
 
+
+winBox :: Point -> Picture
+winBox (x, y) = translate x y $ Pictures [(Color (makeColor 190 200 255 100) $ polygon (rectanglePath (win_side1) (win_side2))), lineLoop (rectanglePath (win_side1) (win_side2))]
+
 winmsg :: Int -> (Maybe Col) -> Picture
 winmsg bs Nothing = Text ""
 winmsg bs (Just c)
-  | c == Black = translate (wwh bs) 0 $ Text "Black Wins"
-  | c == White = translate (wwh bs) 0 $ Text "White Wins"
+  | c == Black = Pictures [winBox (0, 0), (winText (0, 0) "Black Wins")]
+  | c == White = Pictures [winBox (0, 0), (winText (0, 0) "White Wins")]
+
+
+winText :: Point -> String -> Picture
+winText (x, y) str = (translate ((x - win_side1/2) + win_margin)
+                              ((y - win_side2/2) + win_margin)
+                              $ scale win_text_scale win_text_scale $ Text str)
