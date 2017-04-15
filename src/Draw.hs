@@ -10,7 +10,7 @@ import Debug.Trace
     This will need to extract the Board from the world state and draw it
     as a grid plus pieces. -}
 drawWorld :: World -> Picture
-drawWorld w = if is_menu w then Pictures [drawMenu initMenu]
+drawWorld w = if is_menu w then Pictures [drawMenu currentMenu]
               else if (won $ board w) /= Nothing then
                     Pictures [winmsg (size $ board w) (won (board w))]
               else Pictures [grid w,
@@ -34,7 +34,7 @@ square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
 
 
 drawMenu :: Menu -> Picture
-drawMenu m = Pictures [menu_draw x | x <- (entries m)]
+drawMenu m = Pictures ([menu_draw x | x <- (entries m)] ++ [decoration_draw x | x <- (decorations m)])
 
 tiles :: World -> Picture
 tiles w = Pictures [tile w t | t <- pieces $ board w]

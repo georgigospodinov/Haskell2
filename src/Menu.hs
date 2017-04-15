@@ -6,28 +6,37 @@ import Network
 
 import Debug.Trace
 
-data Menu = Menu { entries :: [MenuEntry] }
+data Menu = Menu { entries :: [MenuEntry],
+                   decorations :: [MenuEntryUnclickable]}
 
 data MenuEntry = MenuEntry { menu_draw :: Picture,
                      func :: (World -> World),
                      location :: Point
                    }
 
-initMenu = Menu [singlePlayerEntry, multiPlayerHostEntry, multiPlayerJoinEntry]
+data MenuEntryUnclickable = MenuEntryUnclickable { decoration_draw :: Picture }
+
+initMenu = Menu [singlePlayerEntry, multiPlayerLocalEntry, multiPlayerHostEntry, multiPlayerJoinEntry] []
+hostMenu = Menu [] [findingPlayerEntry]
+
+currentMenu = initMenu
 
 singlePlayerEntry = MenuEntry (menuBar (0,50) "Single Player - AI") singlePlayerChoice (0,50)
-multiPlayerHostEntry = MenuEntry (menuBar (0,20) "Multiplayer - Host") multiPlayerChoiceHost (0,20)
-multiPlayerJoinEntry = MenuEntry (menuBar (0,-10) "Multiplayer - Join") multiPlayerChoiceJoin (0,-10)
+multiPlayerLocalEntry = MenuEntry (menuBar (0,20) "Multiplayer - Local") multiPlayerChoiceLocal (0,20)
+multiPlayerHostEntry = MenuEntry (menuBar (0,-10) "Multiplayer - Host") multiPlayerChoiceHost (0,-10)
+multiPlayerJoinEntry = MenuEntry (menuBar (0,-40) "Multiplayer - Join") multiPlayerChoiceJoin (0,-40)
+
+findingPlayerEntry = MenuEntryUnclickable (menuBar (0, -10) "Finding Player...")
 
 menuClick :: Point -> World -> Maybe World
-menuClick (x, y) w = case isInBounds (x, y) initMenu of
+menuClick (x, y) w = case isInBounds (x, y) currentMenu of
                         Just mb -> Just ((func mb) w)
                         Nothing -> Nothing
 
 isInBounds :: Point -> Menu -> Maybe MenuEntry
-isInBounds (x, y) w = case (length $ filter (isInBar (x,y)) $ entries initMenu) of
+isInBounds (x, y) w = case (length $ filter (isInBar (x,y)) $ entries currentMenu) of
                         0 -> Nothing
-                        _ -> Just (head (filter (isInBar (x, y)) $ entries initMenu))
+                        _ -> Just (head (filter (isInBar (x, y)) $ entries currentMenu))
 
 isInBar :: Point -> MenuEntry -> Bool
 isInBar (x, y) b = ((inRangeX (x) (fst (location b))) && (inRangeY (y) (snd (location b))))
@@ -53,9 +62,12 @@ menuText (x, y) str = (translate ((x - bar_side1/2) + bar_margin)
 singlePlayerChoice:: World -> World
 singlePlayerChoice w = w {aion = True, is_menu = False}
 
+multiPlayerChoiceLocal:: World -> World
+multiPlayerChoiceLocal w = w {aion = False, is_menu = False}
+
 multiPlayerChoiceHost:: World -> World
 multiPlayerChoiceHost w = unsafeSetupNetworking (w { is_menu = False, net_data = (net_data w) { useNet = True , isServ = True}, board = b { human = Black }})
-                          where b = board w
+                             where b = board w
 
 multiPlayerChoiceJoin:: World -> World
 multiPlayerChoiceJoin w = unsafeSetupNetworking  (w { is_menu = False, net_data = (net_data w) { useNet = True , isServ = False}, board = b { human = White }})
