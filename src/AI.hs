@@ -160,3 +160,9 @@ removeDuplicates [] = []
 removeDuplicates (x:xs) | x `elem` xs = removeDuplicates xs
                         -- for every element, if it is present in the remaining elements, ignore it
                         | otherwise = x : removeDuplicates xs
+
+hint :: World -> World
+hint w = trace ("Hint: " ++ show $ getBestMove 0 gt c) w
+         where gt = buildTree besideFilledCells b c
+               b = board w
+               c = human b

@@ -29,20 +29,23 @@ handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
           Just w' -> w'
           Nothing -> w
       else case makeMove (board w) (turn w) (convx, convy) of  -- try to make the move
-          Just b ->  sendNet (w' b w) (convx, convy)        -- valid move =>   return updated world and send over network
-          Nothing -> w                                      -- invalid move => return same world
+          -- valid move =>   return updated world and send over network
+          Just b -> wrmv w ((convx, convy), turn w) $ sendNet (w' b w) (convx, convy)
+          Nothing -> w  -- invalid move => return same world
           where
-              sendNet w (x, y) = if (useNet (net_data w)) && ((human $ board w) /= turn w)  -- if we use the network and it was previously my turn
-                                  then unsafeDupablePerformIO $ sendMove w (x, y)           --    then send the move over the network
-                                 else w                                                     --  else just return the world
+                                 -- if we use the network and it was previously my turn
+              sendNet w (x, y) = if (useNet (net_data w)) && ((human $ board w) /= turn w)
+                                   -- then send the move over the network
+                                  then unsafeDupablePerformIO $ sendMove w (x, y)
+                                 else w  --  else just return the world
               w' b w = World b (other (turn w)) "" (aion w) Nothing (recording w) False (blacks w) (whites w) (cell w) (Just w) (net_data w)
                                                                                             -- updates the world, switching the turn and using the new board
-              convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side                      -- convert graphics x coords to board coords
-              convy = round $ (y-wwh (size $ board w)-sq_side)/sq_side                      -- convert graphics y coords to board coords
+              convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side  -- convert graphics x coords to board coords
+              convy = round $ (y-wwh (size $ board w)-sq_side)/sq_side  -- convert graphics y coords to board coords
 
 handleInput (EventKey (Char k) Down _ _) w
     = case k of
-        '.'     -> trace ("cmd: ") $ w {cmd=""}           -- clear command
+        '.'     -> trace ("cmd: ") $ command w
         '\b'    -> trace ("cmd: " ++ del) $ w{cmd=del}
         '\SUB'  -> case prev w of                         -- Ctrl+z ("Undo")
                         Nothing -> w                      -- if there is nothing to undo then keep same world
@@ -51,9 +54,9 @@ handleInput (EventKey (Char k) Down _ _) w
                                         Just w'' -> w''
         '\DC3'  -> trace "INFO - Saving Game in 'save.dat'" $ unsafeDupablePerformIO $ save "save.dat" w
                                                           -- Ctrl+s saves game
-        '\f'    -> if isRight $ b then w {board=fromRight b} -- Ctrl+l loades game
-                   else trace (fromLeft b) w
-                   where b = trace "INFO - Loading Game from 'save.dat'" $ unsafeDupablePerformIO $ load "save.dat"
+        '\f'    -> if isRight w' then w' -- Ctrl+l loades game
+                   else trace (fromLeft w') w
+                   where w' = trace "INFO - Loading Game from 'save.dat'" $ unsafeDupablePerformIO $ load "save.dat"
         _       -> trace ("cmd: " ++ app) $ w {cmd=app}
         where
             app = cmd w ++ [k]                            -- append character
@@ -62,3 +65,9 @@ handleInput (EventKey (Char k) Down _ _) w
             init' xs = init xs
 handleInput (EventKey (Char k) Up _ _) w = trace ("Key " ++ show k ++ " up") w
 handleInput e w = w
+
+command :: World -> World
+command w = if cmd w == "hint" then hint w'
+            -- recognise other commands
+            else w'
+            where w' = w{cmd=""}  -- clear command

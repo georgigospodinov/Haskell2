@@ -58,7 +58,6 @@ data Net_Data = Net_Data { useNet :: Bool,          -- if the network should be 
 
 initNet_Data = Net_Data False False Nothing "127.0.0.1" "5234"
 
--- move human and fair to World?
 data Board = Board { size :: Int,
                      target :: Int,
                      human :: Col,
@@ -220,19 +219,30 @@ evaluate b c = if won b == Just c then target b
 instance Serialize Board
 instance Serialize Col
 -- Manually Serialize World because Picture serialization is not automatic, not needed.
---instance Serialize World where
---    put w   = put (board w, turn w, cmd w, aion w, replay w, recording w, prev w, net_data w)
---    get w   = get (board w, turn w, cmd w, aion w, replay w, recording w, prev w, net_data w)
+instance Serialize World where
+    put w   = put (board w, turn w, cmd w, aion w, recording w, prev w, net_data w)
+    get     = do board  <- get
+                 turn   <- get
+                 cmd    <- get
+                 aion   <- get
+                 recording  <- get
+                 blacks <- loadBMP "src/img/black.bmp"
+                 whites <- loadBMP "src/img/white.bmp"
+                 cell <- loadBMP "src/img/gomoku-part.bmp"
+                 prev   <- get
+                 net_data   <- get
+                 return (World board turn cmd aion Nothing recording False
+                            blacks whites cell prev net_data)
 
 -- update to save world
 save :: FilePath -> World -> IO World
-save pth wd = do Data.ByteString.writeFile pth (encode (board wd))
+save pth wd = do Data.ByteString.writeFile pth (encode wd)
                  putStrLn "OK - Game Saved."
                  return wd
 
 -- update to load world and to accept a world.
 -- Keep the images from the accepted world, change the other components to what was loaded
-load:: FilePath -> IO (Either String Board)
-load pth = do serBoard <- Data.ByteString.readFile pth
+load:: FilePath -> IO (Either String World)
+load pth = do serWorld <- Data.ByteString.readFile pth
               putStrLn "OK - Game Loaded."
-              return (decode serBoard)
+              return (decode serWorld)
