@@ -5,7 +5,7 @@ import Board
 import Network
 
 import Debug.Trace
-
+-- :todo ALL
 {- | Menu data containing MenuEntries and decorations (unclickable Gloss
      picutres like lines or titles) -}
 data Menu = Menu { entries      :: [MenuEntry],
