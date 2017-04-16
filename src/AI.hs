@@ -13,10 +13,12 @@ data GameTree = GameTree { game_board :: Board,
                            game_turn  :: Col,
                            next_moves :: [(Position, GameTree)] }
 
-{-| A function to generate plausible moves (i.e. board positions)
-    for a player (Col) on a particular board, generate a (potentially)
-    infinite game tree.
-    :todo elaborate on this -}
+{-| A function to generate moves (i.e. board positions) for a player (Col)
+    on a particular board, resulting in a (potentially) infinite game tree.
+    Makes calls to the move generator to construct the tree of positions.
+    relies on lazy evaluation to not construct more nodes than necessary.
+    This means that even though the tree is huge,
+    only the nodes accessed get created. -}
 buildTree :: (Board -> Col -> [Position]) -- Move generator
              -> Board                     -- board state
              -> Col                       -- player to play next
@@ -42,9 +44,14 @@ getBestMove :: Int          -- Maximum search depth
                -> Position  -- the resulting best move
 getBestMove maxdepth gt c = snd $ recurse maxdepth best gt c
 
-{- | Function recurses the gametree to a maximum depth given a selector
-     function, the game tree and the current colour.
-     :todo elaborate -}
+-- | Selector type selects a value-move tuple from a list of such tuples.
+type Selector = [(Int, Position)] -> (Int, Position)
+
+{- | A helper function for finding the best move. Returns a value-move tuple.
+     This recursion goes down the game tree nodes, using the Selector to make predictions about
+     the moves that will be taken. This function changes its selector every time it calls itself.
+     This reflects the presumption that the AI will select the best move and the human player -
+     the worst move (one that puts the AI in the worst position). -}
 recurse :: Int -> Selector-> GameTree -> Col -> (Int, Position)
 recurse 0 select gt c = select [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
 recurse d select gt c = select options
@@ -58,9 +65,6 @@ recurse d select gt c = select options
                                            else if a == (target $ game_board gt) then a   -- if a means winning, then a
                                            else min a b                                   -- else, the lower of the two
                                            -- this means it will detect if a move will eventually lead to a lost game
-
--- | Selector type selects a value-move touple from a list of touples.
-type Selector = [(Int, Position)] -> (Int, Position)
 
 {- | Function swaps the selectors best and worst as every level in the gametree
      will need a different selector (my best move vs opponents worst move) -}
@@ -89,19 +93,19 @@ greater (i1, p1) (i2, p2) = if i1 > i2 then (i1, p1)
 lesser :: (Int, Position) -> (Int, Position) -> (Int, Position)
 lesser (i1, p1) (i2, p2) = if i1 < i2 then (i1, p1)
                          else (i2, p2)
-{- | Function allows the ai to make a move, building the gametree.
-     The ai currently uses the strategy :todo -}
+
+-- | The AI makes a move by calling getBestMove to determine where to put a piece.
 aiturn :: World -> World
 aiturn w = if turn w == c then  -- if its the ai's turn
               w {board = case makeMove b c move  of
-                              Just b'-> wrmv w (move, c) b' -- :todo what does wrmv do?
+                              Just b'-> wrmv w (move, c) b' -- write the move to the recording and return the new board
                               Nothing -> trace ("ERROR - Cannot make move: " ++ show move) b,
                  turn = human b, prev = Just w}
            else w -- otherwise do no change
            where b    = board w         -- the board
                  c    = other $ human b -- color of ai
                  gt   = buildTree besideFilledCells b c     -- game tree
-                 turnsToThinkAhead = 1  -- drastic slow down at 3, fast at 1
+                 turnsToThinkAhead = 2  -- drastic slow down at 3, fast at 1
                  move = getBestMove turnsToThinkAhead gt c  -- the best move
 
 -- | Given a board will return a list of empty cells beside filled cells

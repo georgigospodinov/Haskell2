@@ -51,7 +51,7 @@ record=~/Documents/go_sv # replays a game from a given filename
   
 </pre>
 #### Conflicting options 
-When mutliple options were set with conflicting Colour assignments, only the first option is used.  
+When conflicting options are set, only the first option is used.
   
 ### Ingame commands
 <pre>
