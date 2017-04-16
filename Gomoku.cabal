@@ -11,7 +11,7 @@ cabal-version:       >=1.10
 
 executable gomoku
   main-is:             Main.hs
-  Other-modules:       Board, Input, Draw, AI
+  Other-modules:       GameWorld, Input, Draw, AI
   build-depends:       base >=4.6 && <4.9,
                        gloss,
                        MissingH,
