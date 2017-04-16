@@ -34,7 +34,7 @@ parseArgument str w =   if startswith "size=" str then
                         else if startswith "computer=" str then
                             w'{ board = b {human = other $ read $ drop (length "computer=") str} }
                         else if startswith "ai-on=" str then
-                            w'{ aion = read $ drop (length "ai-on=") str }
+                            w'{ ai_on = read $ drop (length "ai-on=") str }
                         else if startswith "replay=" str then
                             w'{ replay = Just $ drop (length "replay=") str }
                         else if startswith "record=" str then

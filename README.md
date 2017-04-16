@@ -12,24 +12,33 @@ cabal run [options]
 ### [options] include
 fair=True    # Black Player has a disadvantage (3and3 and 4and4 rules apply only to them)  
 fair=False   # All Players have a disadvantage (rules apply to all)  
+> Default: fair=False  
   
 size=9       # The size of the board (any integer greater than 0)  
+> Default: size=6  
   
 target=5     # The number of pieces required in a row to win the game (integer less than size)  
+> Default: target=3  
   
 human=Black  # Sets the human to use the colour Black  
 human=White  # Sets the human to use the colour White  
+> Default: human=Black  
   
 ai=Black     # Sets up an AI opponent using the colour Black  
 ai=White     # Sets up an AI opponent using the colour White  
-   
 computer=..  # Same as "ai=.."  
+> Default: ai=White  
   
 server=True  # Using a network opponent and starting this game as the server  
 server=False # Using a network opponent and starting this game as the client  
              # leave server out to launch non-network game  
-addr=192...  # specify internet address to connect to
-port=4242    # specifiy port to use
+> Default: no network play
+  
+addr=192.168.1.1  # specify ip address to connect to (if "server=False")  
+> Default: addr: 127.0.0.1  
+  
+port=4242    # specifiy port to use (relevant to server and client)  
+> Default: port= 5234  
   
 ### Conflicting options 
 When mutliple options were set with conflicting Colour assignments, only the first option is used.  
