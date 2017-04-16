@@ -10,6 +10,7 @@ cabal configure
 cabal run [options]  
   
 ### [options] include
+<pre>
 fair=True    # Black Player has a disadvantage (3and3 and 4and4 rules apply only to them)  
 fair=False   # All Players have a disadvantage (rules apply to all)  
 > Default: fair=False  
@@ -40,6 +41,12 @@ addr=192.168.1.1  # specify ip address to connect to (if "server=False")
 port=4242    # specifiy port to use (relevant to server and client)  
 > Default: port= 5234  
   
+ai-on=True   # switches ai to on. can be used with human=White/..  
+ai-on=False  # switches ai to off and allows 2 humans to play  
+  
+replay=True
+
+</pre>
 ### Conflicting options 
 When mutliple options were set with conflicting Colour assignments, only the first option is used.  
   
