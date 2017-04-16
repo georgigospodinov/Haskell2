@@ -39,14 +39,14 @@ handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
                                    -- then send the move over the network
                                   then unsafeDupablePerformIO $ sendMove w (x, y)
                                  else w  --  else just return the world
-              w' b w = World b initMenu (other (turn w)) "" (ai_on w) Nothing (recording w) False False (blacks w) (whites w) (cell w) (Just w) (net_data w)
+              w' b w = World b initMenu (other (turn w)) "" (ai_on w) Nothing (recording w) False False False (blacks w) (whites w) (cell w) (Just w) (net_data w)
                                                                                             -- updates the world, switching the turn and using the new board
               convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side  -- convert graphics x coords to board coords
               convy = round $ (y-wwh (size $ board w)-sq_side)/sq_side  -- convert graphics y coords to board coords
 
 handleInput (EventKey (Char k) Down _ _) w
     = case k of
-        '.'     -> trace ("INFO - cmd: ") $ command w
+        '~'     -> trace ("INFO - cmd: ") $ command w
         '\b'    -> trace ("INFO - cmd: " ++ del) $ w{cmd=del}
         '\SUB'  -> case prev w of                         -- Ctrl+z ("Undo")
                         Nothing -> w                      -- if there is nothing to undo then keep same world
@@ -56,7 +56,8 @@ handleInput (EventKey (Char k) Down _ _) w
         '\DC3'  -> trace "INFO - Saving Game in 'save.dat'" $ unsafeDupablePerformIO $ save "save.dat" w
                                                           -- Ctrl+s saves game
         '\f'    -> unsafeDupablePerformIO $ load w "save.dat"
-        _       -> trace ("INFO - unrecognised cmd: " ++ app) $ w {cmd=app}
+        _       -> if(taking_add w) then trace ("Taking Address: " ++ app) $ w {cmd=app}
+                   else trace ("INFO - unrecognised cmd: " ++ app) $ w {cmd=app}
         where
             app = cmd w ++ [k]                            -- append character
             del = init' $ cmd w                           -- delete last character
@@ -66,7 +67,11 @@ handleInput e w = w
 
 -- | hint command
 command :: World -> World
-command w = if cmd w == "hint" then hint w'
+command w = if (taking_add w) then
+              case takeAdd w (cmd w) of
+                Just w'' -> unsafeSetupNetworking $ setToHost $ w''{cmd=""}
+                Nothing -> w'
+            else if cmd w == "hint" then hint w'
             -- recognise other commands
             else w'
             where w' = w{cmd=""}  -- clear command
