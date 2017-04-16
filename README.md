@@ -66,19 +66,23 @@ hint.		# (typed) prints a hint to the console showing a good next move
 </pre>
 ### Networking
 #### Notes:
-Currently only connect via 127.0.0.1 port 4242  
 if in server-mode, player is black  
 if in client-mode, player is white  
---> server always starts  
+--> this means server always starts  
   
 ! IMPORTANT ! do not use in conjunction with "human=..." or "ai=..." yet.  
   
 #### Steps to setup a network game:
  1. On computer A run "cabal run server=True" (also specifying the size and target)  
-  1.1 Wait until the message "OK - Socket Ready" appears in the terminal. Then continue  
+   a) Wait until the message "OK - Socket Ready" appears in the terminal. Then continue  
  2. On computer B run "cabal run server=False" (specifying the exact same size and target as on computer A)  
-  2.2 Confirm the successfull connection using the messages printed in the terminals of both computers  
+   a) Confirm the successfull connection using the messages printed in the terminals of both computers  
  3. Make a move on computer A  
  4. Wait until player A's move appears on player B's board, only then make B move
+   ... continue gameplay as usual.  
   
+Note: It is important that you do not click on the board when it is not your turn!  
+      This will send your (accidental) click immediately after the when the other  
+      endpoint starts listening for your move.  
+
   
