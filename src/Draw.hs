@@ -31,31 +31,34 @@ grid w = Pictures [square (x, y) w |
 square :: Point -> World -> Picture
 square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
 
-
-
+-- | Draws the menu using the Gloss Pictures specified in the world.
 drawMenu :: Menu -> Picture
 drawMenu m = Pictures ([menu_draw x | x <- (entries m)] ++ [decoration_draw x | x <- (decorations m)])
 
+-- | Draws all the board squares (tiles). There should be size*size of them.
 tiles :: World -> Picture
 tiles w = Pictures [tile w t | t <- pieces $ board w]
 
+{- | Draws a single board square (tile). Uses the gloss picture supplied in world
+     and translates to the right position -}
 tile :: World -> (Position, Col) -> Picture
 tile w ((x, y), c) = translate xtranslation ytranslation $ pic w c
                      where xtranslation = (fromIntegral x*sq_side+wwh bs+sq_side)
                            ytranslation = (fromIntegral y*sq_side+wwh bs+sq_side)
                            bs = size $ board w
 
-
+-- | Draws the win-message-box if a player has won.
 winBox :: Point -> Picture
 winBox (x, y) = translate x y $ Pictures [(Color (makeColor 190 200 255 100) $ polygon (rectanglePath (win_side1) (win_side2))), lineLoop (rectanglePath (win_side1) (win_side2))]
 
+-- | Draws the whole win-message if a player has won.
 winmsg :: Int -> (Maybe Col) -> Picture
 winmsg bs Nothing = Text ""
 winmsg bs (Just c)
   | c == Black = Pictures [winBox (0, 0), (winText (0, 0) "Black Wins")]
   | c == White = Pictures [winBox (0, 0), (winText (0, 0) "White Wins")]
 
-
+-- Draws the win-message-text if a player has won "Black Wins" or "White Wins"
 winText :: Point -> String -> Picture
 winText (x, y) str = (translate ((x - win_side1/2) + win_margin)
                               ((y - win_side2/2) + win_margin)

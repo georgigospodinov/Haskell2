@@ -46,8 +46,8 @@ handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
 
 handleInput (EventKey (Char k) Down _ _) w
     = case k of
-        '.'     -> trace ("cmd: ") $ command w
-        '\b'    -> trace ("cmd: " ++ del) $ w{cmd=del}
+        '.'     -> trace ("INFO - cmd: ") $ command w
+        '\b'    -> trace ("INFO - cmd: " ++ del) $ w{cmd=del}
         '\SUB'  -> case prev w of                         -- Ctrl+z ("Undo")
                         Nothing -> w                      -- if there is nothing to undo then keep same world
                         Just w' -> case prev w' of        -- attempt to revert 2 worlds
@@ -56,15 +56,15 @@ handleInput (EventKey (Char k) Down _ _) w
         '\DC3'  -> trace "INFO - Saving Game in 'save.dat'" $ unsafeDupablePerformIO $ save "save.dat" w
                                                           -- Ctrl+s saves game
         '\f'    -> unsafeDupablePerformIO $ load w "save.dat"
-        _       -> trace ("cmd: " ++ app) $ w {cmd=app}
+        _       -> trace ("INFO - unrecognised cmd: " ++ app) $ w {cmd=app}
         where
             app = cmd w ++ [k]                            -- append character
             del = init' $ cmd w                           -- delete last character
             init' [] = []                                 -- get safe first item of a list
             init' xs = init xs
---handleInput (EventKey (Char k) Up _ _) w = trace ("Key " ++ show k ++ " up") w
 handleInput e w = w
 
+-- | hint command
 command :: World -> World
 command w = if cmd w == "hint" then hint w'
             -- recognise other commands
