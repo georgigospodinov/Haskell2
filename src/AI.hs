@@ -1,6 +1,6 @@
 module AI where
 
-import Board
+import GameWorld
 import Recording
 
 import Debug.Trace
@@ -154,7 +154,7 @@ removeDuplicates (x:xs) | x `elem` xs = removeDuplicates xs
                         -- for every element, if it is present in the remaining elements, ignore it
                         | otherwise = x : removeDuplicates xs
 
--- | Displays a hint based on the ai algorithm in the console for the user. 
+-- | Displays a hint based on the ai algorithm in the console for the user.
 hint :: World -> World
 hint w = trace ("HINT - " ++ (show $ getBestMove 0 gt c)) w
          where gt = buildTree besideFilledCells b c

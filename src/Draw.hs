@@ -1,7 +1,7 @@
 module Draw where
 
 import Graphics.Gloss
-import Board
+import GameWorld
 import Menu
 
 import Debug.Trace
@@ -10,7 +10,7 @@ import Debug.Trace
     This will need to extract the Board from the world state and draw it
     as a grid plus pieces. -}
 drawWorld :: World -> Picture
-drawWorld w = if is_menu w then Pictures [drawMenu currentMenu]
+drawWorld w = if is_menu w then Pictures [drawMenu $ curr_menu w]
               else if (won $ board w) /= Nothing then
                     Pictures [winmsg (size $ board w) (won (board w))]
               else Pictures [grid w,

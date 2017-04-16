@@ -1,6 +1,6 @@
 module Network where
 
-import Board
+import GameWorld
 import Recording
 
 import Debug.Trace
@@ -23,7 +23,7 @@ stringToPos s = read s::(Int, Int)
 
 -- | Sends a move over a connected socket. Converts the position to string first.
 sendMove :: World -> (Int, Int) -> IO World
-sendMove w (x, y) = do sendMsg (eliminate (Board.socket (net_data w))) ( posToString (x, y) )
+sendMove w (x, y) = do sendMsg (eliminate (GameWorld.socket (net_data w))) ( posToString (x, y) )
                        return w
                        -- eliminate is safe to use because this function is only called if there is
                        -- definitely a socket connection.
@@ -58,12 +58,12 @@ setupNetworking :: World -> IO World
 setupNetworking w = do if (useNet (net_data w)) then      -- if network is used
                           if (isServ (net_data w)) then   -- if server
                              do sock <- serverSetup (port $ net_data w) -- run serverSetup and add socket to world
-                                let w' = w { net_data = (net_data w) { Board.socket = Just sock } }
+                                let w' = w { net_data = (net_data w) { GameWorld.socket = Just sock } }
                                 return w'
                                                           -- else client
                           else do sock <- clientSetup (addr $ net_data w)  (port $ net_data w)
                                                                 -- run clientSetup and add socket to world
-                                  let w' = w { net_data = (net_data w) { Board.socket = Just sock } }
+                                  let w' = w { net_data = (net_data w) { GameWorld.socket = Just sock } }
                                   return w'
                        else return w                      -- else no networking, so just return worlds
 

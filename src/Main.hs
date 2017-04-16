@@ -4,7 +4,7 @@ import Graphics.Gloss
 import System.Environment
 import Data.String.Utils
 
-import Board
+import GameWorld
 import Draw
 import Input
 import Recording

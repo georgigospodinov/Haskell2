@@ -1,6 +1,6 @@
 module Update where
 
-import Board
+import GameWorld
 import Network
 import AI
 
@@ -17,6 +17,6 @@ updateWorld t w =   if replay w /= Nothing then
                               Nothing -> trace "INFO - End of replay" w
                     -- if we use the network and it is not my turn (w is world with switched turn)
                     else if (useNet (net_data w)) && ((human $ board w) /= turn w) then
-                      rcvMove w (eliminate (Board.socket (net_data w))) -- then wait and recieve the next move
+                      rcvMove w (eliminate (GameWorld.socket (net_data w))) -- then wait and recieve the next move
                     else if ai_on w then aiturn w
                     else w

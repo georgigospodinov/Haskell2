@@ -1,6 +1,6 @@
 module Recording where
 
-import Board
+import GameWorld
 
 import Debug.Trace
 import System.IO.Unsafe

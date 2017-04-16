@@ -6,7 +6,7 @@ import System.IO.Unsafe
 import Data.Either.Unwrap
 import Debug.Trace
 
-import Board
+import GameWorld
 import Menu
 import Network
 import Recording
@@ -27,7 +27,8 @@ handleInput :: Event -> World -> World
 handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
     = if is_menu w
         then case menuClick (x, y) w of
-          Just w' -> w'
+          Just w' -> if(to_network w') then (unsafeSetupNetworking (w' {to_network = False}))
+                     else w'
           Nothing -> w
       else case makeMove (board w) (turn w) (convx, convy) of  -- try to make the move
           -- valid move =>   return updated world and send over network
@@ -39,7 +40,7 @@ handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
                                    -- then send the move over the network
                                   then unsafeDupablePerformIO $ sendMove w (x, y)
                                  else w  --  else just return the world
-              w' b w = World b (other (turn w)) "" (ai_on w) Nothing (recording w) False (blacks w) (whites w) (cell w) (Just w) (net_data w)
+              w' b w = World b initMenu (other (turn w)) "" (ai_on w) Nothing (recording w) False False (blacks w) (whites w) (cell w) (Just w) (net_data w)
                                                                                             -- updates the world, switching the turn and using the new board
               convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side  -- convert graphics x coords to board coords
               convy = round $ (y-wwh (size $ board w)-sq_side)/sq_side  -- convert graphics y coords to board coords
