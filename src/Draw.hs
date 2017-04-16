@@ -2,7 +2,6 @@ module Draw where
 
 import Graphics.Gloss
 import GameWorld
-import Menu
 
 import Debug.Trace
 

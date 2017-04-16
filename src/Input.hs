@@ -7,7 +7,6 @@ import Data.Either.Unwrap
 import Debug.Trace
 
 import GameWorld
-import Menu
 import Network
 import Recording
 import AI
