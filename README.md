@@ -32,7 +32,7 @@ computer=..  # Same as "ai=.."
   
 server=True  # Using a network opponent and starting this game as the server  
 server=False # Using a network opponent and starting this game as the client  
-             # leave server out to launch non-network game  
+             # leave server option out to launch non-network game  
 > Default: no network play
   
 addr=192.168.1.1  # specify ip address to connect to (if "server=False")  
@@ -43,13 +43,27 @@ port=4242    # specifiy port to use (relevant to server and client)
   
 ai-on=True   # switches ai to on. can be used with human=White/..  
 ai-on=False  # switches ai to off and allows 2 humans to play  
-  
-replay=True
+> Default: ai-on=True  
 
+replay=~/Documents/go_sv # records the game to a given filename  
+record=~/Documents/go_sv # replays a game from a given filename  
+> Default: no record/replay  
+  
 </pre>
-### Conflicting options 
+#### Conflicting options 
 When mutliple options were set with conflicting Colour assignments, only the first option is used.  
   
+### Ingame commands
+<pre>
+Just press/type the keyboard commands while playing the game.  
+Ctrl+z		# undo move
+Ctrl+s		# save game to save.dat in working directory
+Ctrl+l		# load game from a file save.dat in working directory
+hint.		# (typed) prints a hint to the console showing a good next move
+.		# to clear invalid commands
+  
+
+</pre>
 ### Networking
 #### Notes:
 Currently only connect via 127.0.0.1 port 4242  
