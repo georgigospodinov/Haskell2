@@ -31,6 +31,8 @@ parseArgument str w =   if startswith "size=" str then
                             w'{ board = b {human = read $ drop (length "human=") str} }
                         else if startswith "ai=" str then
                             w'{ board = b {human = other $ read $ drop (length "ai=") str} }
+                        else if startswith "ai_level=" str then
+                            w'{ ai_level = read $ drop (length "ai_level=") str}
                         else if startswith "computer=" str then
                             w'{ board = b {human = other $ read $ drop (length "computer=") str} }
                         else if startswith "ai-on=" str then

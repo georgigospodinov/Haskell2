@@ -12,7 +12,6 @@ import Network.Socket
 import Data.Either.Unwrap
 import Data.List.Split
 import Data.List.Utils
-import Data.List.Unique
 import Data.List
 import System.IO.Unsafe
 
@@ -362,7 +361,7 @@ setThreeAndThree:: (World) -> (World)
 setThreeAndThree w = w {board = (board w) {fair = (not (fair (board w)))}}
 --
 setAI:: (World) -> (World)
-setAI w = w {ai_on = (not ai_on w)}
+setAI w = w {ai_on = (not (ai_on w))}
 
 setHardAI:: (World) -> (World)
 setHardAI w = (w {ai_on = True, ai_level = 3}) {curr_menu = (replaceMenuOption (curr_menu w) (aiOption))}
