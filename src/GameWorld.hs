@@ -85,6 +85,7 @@ data World = World { board        :: Board,         -- the board
                      turn         :: Col,           -- the colour of the player to play now
                      cmd          :: String,        -- the last command
                      ai_on        :: Bool,          -- if the ai is used
+                     ai_level     :: Int,
                      replay       :: Maybe String,  -- if the game is a replay of a recorded game - filename of rec file
                      recording    :: Maybe String,  -- if the game should be recorded - filename or rec file
                      is_menu      :: Bool,          -- if the menu should be displayed
@@ -105,7 +106,7 @@ pic w Black = blacks w
 pic w White = whites w
 
 -- | Defualt initial world using initBoard and initNet_Data
-initWorld = World initBoard initMenu Black "" False Nothing Nothing True False False False
+initWorld = World initBoard initMenu Black "" False 2 Nothing Nothing True False False False
             (Color black $ circleSolid (sq_side/2)) -- black circle (bmp pics loaded in main method replacing these)
             (Color white $ circleSolid (sq_side/2)) -- white circle
             (Color sq_border $ Line                 -- black box
@@ -234,7 +235,7 @@ findEnd b c dir (lx,ly) (x,y) = if outOfBounds b (x,y) then (lx,ly)
      pieces or are a victory row. Descends from every square into all directions. -}
 longest :: Board -> Col -> Int
 longest b c = max' $ map fst $  -- take the maximum length
-                filter (\ (l, bl) -> bl==False || l == target b)
+                filter (\ (l, bl) -> bl==False || l == target b || l < target b)
                     [if copp (x,y) dir /= Just c then descend b c dir (x,y)
                      -- The previous piece must not be of the same color
                      else (-target b -1, True)  -- if it is, ignore it
@@ -258,14 +259,15 @@ instance Serialize Board
 instance Serialize Col
 -- | Serialization instance to save/load for World
 instance Serialize World where
-    put w   = put (board w, turn w, cmd w, ai_on w, recording w, prev w)
+    put w   = put (board w, turn w, cmd w, ai_on w, ai_level w, recording w, prev w)
     get     = do board  <- get
                  turn   <- get
                  cmd    <- get
                  ai_on   <- get
+                 ai_level <- get
                  recording  <- get
                  prev   <- get
-                 return (World board initMenu turn cmd ai_on Nothing recording False False False False
+                 return (World board initMenu turn cmd ai_on ai_level Nothing recording False False False False
                             (blacks initWorld) (whites initWorld) (cell initWorld) prev (net_data initWorld))
 
 
@@ -362,6 +364,9 @@ setThreeAndThree w = w {board = (board w) {fair = (not (fair (board w)))}}
 setAI:: (World) -> (World)
 setAI w = w {ai_on = True}
 
+setHardAI:: (World) -> (World)
+setHardAI w = (w {ai_on = True, ai_level = 3}) {curr_menu = (replaceMenuOption (curr_menu w) (aiOption))}
+
 
 {- | Given a world will return world ready to take an address and port for connecting to a host-}
 multiPlayerChoiceLocal:: World -> World
@@ -420,11 +425,11 @@ submitPort w = setToHost $ (takePort w (cmd w))
 
 {- | Resets world to initial world, keeps images for pieces and board -}
 resetWorld:: World -> World
-resetWorld w = World initBoard initMenu Black "" False Nothing Nothing True False False False (blacks w) (whites w) (cell w) Nothing initNet_Data
+resetWorld w = World initBoard initMenu Black "" False 2 Nothing Nothing True False False False (blacks w) (whites w) (cell w) Nothing initNet_Data
 
 -- List of possible menus
 initMenu = Menu [localEntry, multiPlayerHostEntry, multiPlayerJoinEntry] [] [mainMenuTitle]
-optionMenu = Menu [localPlayBegin, cancelEntry] [fairOption, aiOption] [localOptionsTitle]
+optionMenu = Menu [localPlayBegin, cancelEntry] [fairOption, aiOption, aiHardOption] [localOptionsTitle]
 connectJoinChoiceMenu = Menu [cancelEntry, submitTextEntry] [] [getPortTextDecoration]
 connectHostChoiceMenu = Menu [cancelEntry, submitTextEntry2] [] [getPortTextDecoration2]
 
@@ -448,8 +453,9 @@ getPortTextDecoration2 = MenuEntryUnclickable (menuBar (0, 20) "Port?")
 localOptionsTitle = MenuEntryUnclickable (titleBar (0, 100) "OPTIONS")
 
 localPlayBegin = MenuEntry (menuBar (0, -70) "Play!") localPlayChoice (0, -70)
-fairOption = MenuEntryOption (optionBar (0, 50) "3 x 3 & 4 x 4" False) setThreeAndThree "3 x 3 & 4 x 4" (0, 50) False
-aiOption = MenuEntryOption (optionBar (0, 20) "AI" False) setAI "AI" (0, 20) False
+fairOption = MenuEntryOption (optionBar (0, 50) "Handicap P1" False) setThreeAndThree "Handicap P1" (0, 50) False
+aiOption = MenuEntryOption (optionBar (0, 20) "AI On" False) setAI "AI On" (0, 20) False
+aiHardOption = MenuEntryOption (optionBar (0, -10) "AI - Hard Mode" False) setHardAI "AI - Hard Mode" (0, -10) False
 
 -- General Purpose
 cancelEntry = MenuEntry (menuBar(0, -100) "Main Menu") resetWorld (0, -100)
