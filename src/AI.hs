@@ -42,7 +42,7 @@ getBestMove :: Int          -- Maximum search depth
                -> GameTree  -- Initial game tree
                -> Col       -- whose turn it is
                -> Position  -- the resulting best move
-getBestMove maxdepth gt c = snd $ recurse maxdepth best gt c
+getBestMove maxdepth gt c = snd $ recurse maxdepth "b" gt c
 
 -- | Selector type selects a value-move tuple from a list of such tuples.
 type Selector = [(Int, Position)] -> (Int, Position)
@@ -52,13 +52,13 @@ type Selector = [(Int, Position)] -> (Int, Position)
      the moves that will be taken. This function changes its selector every time it calls itself.
      This reflects the presumption that the AI will select the best move and the human player -
      the worst move (one that puts the AI in the worst position). -}
-recurse :: Int -> Selector-> GameTree -> Col -> (Int, Position)
-recurse 0 select gt c = select [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
-recurse d select gt c = select options
+recurse :: Int -> String-> GameTree -> Col -> (Int, Position)
+recurse 0 s gt c = getSelector s [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
+recurse d s gt c = getSelector s options
                         where   curr_values :: [(Int, Position)]      -- result of evaluating every possible board
                                 curr_values = [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
                                 next_values :: [(Int, Position)]      -- result of recursing down every node
-                                next_values = [recurse (d-1) (switchSelector select) nt c | (p, nt) <- next_moves gt]
+                                next_values = [recurse (d-1) (switch s) nt c | (p, nt) <- next_moves gt]
                                 options :: [(Int, Position)]          -- taking the lower of the sub-tree and the current node
                                 options = [(min' cv nv, p) | ((nv, _),(cv, p)) <- zip next_values curr_values]
                                 min' a b = if a == 0 - (target $ game_board gt) then a    -- if the game is already lost, it cannot get better
@@ -68,9 +68,13 @@ recurse d select gt c = select options
 
 {- | Function swaps the selectors best and worst as every level in the gametree
      will need a different selector (my best move vs opponents worst move) -}
-switchSelector :: Selector -> Selector
-switchSelector best = worst
-switchSelector worst = best
+getSelector :: String -> Selector
+getSelector "w" = worst
+getSelector "b" = best
+
+switch :: String -> String
+switch "b" = "w"
+switch "w" = "b"
 
 -- | Selector selects the best move from a list of moves and corresponding values.
 best :: Selector
@@ -105,7 +109,7 @@ aiturn w = if turn w == c then  -- if its the ai's turn
            where b    = board w         -- the board
                  c    = other $ human b -- color of ai
                  gt   = buildTree besideFilledCells b c     -- game tree
-                 turnsToThinkAhead = 2  -- drastic slow down at 3, fast at 1
+                 turnsToThinkAhead = 3  -- drastic slow down at 3, fast at 1
                  move = getBestMove turnsToThinkAhead gt c  -- the best move
 
 -- | Given a board will return a list of empty cells beside filled cells
