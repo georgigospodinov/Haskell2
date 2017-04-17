@@ -39,7 +39,7 @@ handleInput (EventKey (MouseButton LeftButton) Up m (x, y)) w
                                    -- then send the move over the network
                                   then unsafeDupablePerformIO $ sendMove w (x, y)
                                  else w  --  else just return the world
-              w' b w = World b initMenu (other (turn w)) "" (ai_on w) Nothing (recording w) False False False False (blacks w) (whites w) (cell w) (Just w) (net_data w)
+              w' b w = World b initMenu (other (turn w)) "" (ai_on w) (ai_level w) Nothing (recording w) False False False False (blacks w) (whites w) (cell w) (Just w) (net_data w)
                                                                                             -- updates the world, switching the turn and using the new board
               convx = round $ (x-wwh (size $ board w)-sq_side)/sq_side  -- convert graphics x coords to board coords
               convy = round $ (y-wwh (size $ board w)-sq_side)/sq_side  -- convert graphics y coords to board coords

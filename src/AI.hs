@@ -105,7 +105,7 @@ aiturn w = if turn w == c then  -- if its the ai's turn
            where b    = board w         -- the board
                  c    = other $ human b -- color of ai
                  gt   = buildTree besideFilledCells b c     -- game tree
-                 turnsToThinkAhead = 2  -- drastic slow down at 3, fast at 1
+                 turnsToThinkAhead = (ai_level w)  -- drastic slow down at 3, fast at 1
                  move = getBestMove turnsToThinkAhead gt c  -- the best move
 
 -- | Given a board will return a list of empty cells beside filled cells
