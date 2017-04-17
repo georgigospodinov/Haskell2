@@ -105,7 +105,7 @@ pic w Black = blacks w
 pic w White = whites w
 
 -- | Defualt initial world using initBoard and initNet_Data
-initWorld = World initBoard initMenu Black "" True Nothing Nothing True False False False
+initWorld = World initBoard initMenu Black "" False Nothing Nothing True False False False
             (Color black $ circleSolid (sq_side/2)) -- black circle (bmp pics loaded in main method replacing these)
             (Color white $ circleSolid (sq_side/2)) -- white circle
             (Color sq_border $ Line                 -- black box
@@ -390,7 +390,7 @@ submitPort w = setToHost $ (takePort w (cmd w))
 
 {- | Resets world to initial world, keeps images for pieces and board -}
 resetWorld:: World -> World
-resetWorld w = World initBoard initMenu Black "" True Nothing Nothing True False False False (blacks w) (whites w) (cell w) Nothing initNet_Data
+resetWorld w = World initBoard initMenu Black "" False Nothing Nothing True False False False (blacks w) (whites w) (cell w) Nothing initNet_Data
 
 -- List of possible menus
 initMenu = Menu [localEntry, multiPlayerHostEntry, multiPlayerJoinEntry] [] []
