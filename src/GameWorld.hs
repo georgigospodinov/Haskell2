@@ -267,13 +267,13 @@ load w pth = do serWorld <- Data.ByteString.readFile pth
                   else return w
 
 
-----------------------------------------------------{
+----------------------------------------------------
 -- ##   ##  ######  ##    #  #     #
 -- # # # #  #       # #   #  #     #
 -- #  #  #  ###     #  #  #  #     #
 -- #     #  #       #   # #   #   #
 -- #     #  ######  #    ##    ###
-----------------------------------------------------}
+----------------------------------------------------
 
 {- | Menu data containing MenuEntries and decorations (unclickable Gloss
      pictures like lines or titles) -}
@@ -393,12 +393,15 @@ resetWorld:: World -> World
 resetWorld w = World initBoard initMenu Black "" False Nothing Nothing True False False False (blacks w) (whites w) (cell w) Nothing initNet_Data
 
 -- List of possible menus
-initMenu = Menu [localEntry, multiPlayerHostEntry, multiPlayerJoinEntry] [] []
-optionMenu = Menu [localPlayBegin, cancelEntry] [fairOption, aiOption] []
+initMenu = Menu [localEntry, multiPlayerHostEntry, multiPlayerJoinEntry] [] [mainMenuTitle]
+optionMenu = Menu [localPlayBegin, cancelEntry] [fairOption, aiOption] [localOptionsTitle]
 connectJoinChoiceMenu = Menu [cancelEntry, submitTextEntry] [] [getPortTextDecoration]
 connectHostChoiceMenu = Menu [cancelEntry, submitTextEntry2] [] [getPortTextDecoration2]
 
 --Main Menu Entries
+
+mainMenuTitle = MenuEntryUnclickable (titleBar (0, 100) "GOMOKU")
+
 localEntry = MenuEntry (menuBar (0,50) "Solo/Local Play") singlePlayerOptions (0,50)
 multiPlayerHostEntry = MenuEntry (menuBar (0,-10) "Multiplayer - Host") multiPlayerChoiceHost (0,-10)
 multiPlayerJoinEntry = MenuEntry (menuBar (0,-40) "Multiplayer - Join") multiPlayerChoiceJoin (0,-40)
@@ -412,6 +415,8 @@ submitTextEntry2 = MenuEntry (menuBar (0, -70) "Setup Connection!") submitPort (
 getPortTextDecoration2 = MenuEntryUnclickable (menuBar (0, 20) "Port?")
 
 -- Local Play Options
+localOptionsTitle = MenuEntryUnclickable (titleBar (0, 100) "OPTIONS")
+
 localPlayBegin = MenuEntry (menuBar (0, -70) "Play!") localPlayChoice (0, -70)
 fairOption = MenuEntryOption (optionBar (0, 50) "3 x 3 & 4 x 4" False) setThreeAndThree "3 x 3 & 4 x 4" (0, 50) False
 aiOption = MenuEntryOption (optionBar (0, 20) "AI" False) setAI "AI" (0, 20) False
@@ -429,6 +434,10 @@ bar_side1 = 210::Float
 bar_side2 = 20::Float
 bar_text_scale = 0.008*bar_side2
 bar_margin = 2::Float
+
+title_side1 = 230::Float
+title_side2 = 30::Float
+title_text_scale = 0.008*title_side2
 
 menu_box_R = 190::Float
 menu_box_G = 200::Float
@@ -483,6 +492,8 @@ menuText (x, y) str = (translate ((x - bar_side1/2) + bar_margin)
                               ((y - bar_side2/2) + bar_margin)
                               $ scale bar_text_scale bar_text_scale $ Text str)
 
+
+
 {- | Given a point, text and a value representing an option location, name and value will produce a picture representing
 an option and it's current value at that point -}
 optionBar :: Point -> String -> Bool -> Picture
@@ -504,3 +515,22 @@ optionStatusText :: Point -> Bool -> Picture
 optionStatusText (x, y) b = (translate ((x - bar_side2) + bar_margin + bar_side1/2 + bar_side2/2)
                               ((y - bar_side2/2) + bar_margin)
                               $ scale bar_text_scale bar_text_scale $ Text (if b then"On" else "Off"))
+
+
+
+{- | Given a point and a string generates a title bar picture containing given text -}
+titleBar :: Point -> String -> Picture
+titleBar (x, y) str = Pictures [(titleBox (x, y)), (titleText (x, y) str)]
+
+{- | Given a point will return  -}
+titleBox :: Point -> Picture
+titleBox (x, y) = translate x y $ Pictures [(Color (makeColor menu_box_R menu_box_G
+                    menu_box_B menu_box_A) $ polygon (rectanglePath (title_side1)
+                    (title_side2))), lineLoop (rectanglePath (title_side1) (title_side2))]
+
+{- | Given a point and String will produce a picture of the text as would fit within
+a text bar -}
+titleText :: Point -> String -> Picture
+titleText (x, y) str = (translate ((x - title_side1/2) + bar_margin + title_side1/4)
+                              ((y - title_side2/2) + bar_margin)
+                              $ scale title_text_scale title_text_scale $ Text str)
