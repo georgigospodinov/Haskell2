@@ -58,7 +58,7 @@ recurse d s gt c = getSelector s options
                         where   curr_values :: [(Int, Position)]      -- result of evaluating every possible board
                                 curr_values = [(evaluate (game_board g) c, p) | (p, g) <- next_moves gt]
                                 next_values :: [(Int, Position)]      -- result of recursing down every node
-                                next_values = [recurse (d-1) (switch s) nt c | (p, nt) <- next_moves gt]
+                                next_values = [recurse (d-1) (s) nt (other c) | (p, nt) <- next_moves gt]
                                 options :: [(Int, Position)]          -- taking the lower of the sub-tree and the current node
                                 options = [(min' cv nv, p) | ((nv, _),(cv, p)) <- zip next_values curr_values]
                                 min' a b = if a == 0 - (target $ game_board gt) then a    -- if the game is already lost, it cannot get better
