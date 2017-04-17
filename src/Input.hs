@@ -56,7 +56,7 @@ handleInput (EventKey (Char k) Down _ _) w
                    else if (taking_port w) then trace ("INFO - Taking Port: " ++ app) $ w {cmd=app}
                    else trace ("INFO - unrecognised cmd: " ++ app) $ w {cmd=app}
         where
-            app = cmd w ++ [k]                            -- append character
+            app = if ((length (cmd w)) < 17) then (cmd w ++ [k]) else (cmd w)                       -- append character
             del = init' $ cmd w                           -- delete last character
             init' [] = []                                 -- get safe first item of a list
             init' xs = init xs

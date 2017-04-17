@@ -238,6 +238,10 @@ instance Serialize World where
                  return (World board initMenu turn cmd ai_on Nothing recording False False False False
                             (blacks initWorld) (whites initWorld) (cell initWorld) prev (net_data initWorld))
 
+
+{- | Takes a world and, if playing against an AI will return world of player's previous move, if
+playing another player it will return the world of the previous turn, if there is no previous world it will return
+last possible world-}
 undo :: World -> World
 undo w = case prev w of                         -- Ctrl+z ("Undo")
                 Nothing -> w                      -- if there is nothing to undo then keep same world

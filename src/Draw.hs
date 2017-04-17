@@ -36,7 +36,7 @@ drawMenu w = let m = curr_menu w in
                else Pictures ([menu_draw x | x <- (entries m)] ++ [decoration_draw x | x <- (decorations m)] ++ [option_draw x | x <- (options m)])
 
 
-
+-- | Returns a box with the current cmd of the world given drawn inside it
 drawCurrentCmd:: World -> Picture
 drawCurrentCmd w = (menuBar (0,-10) (cmd w))
 
