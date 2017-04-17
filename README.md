@@ -2,10 +2,10 @@
 Gomoku Game for CS2006  
   
 ## Installation Instructions
-cabal install MissingH  
-cabal install gloss  
+cabal install MissingH  gloss Network cereal either-unwrap bytestring-0.10.4.0 split  
+  
 cabal configure  
-
+  
 ## Running the Game
 cabal run [options]  
   
@@ -51,7 +51,7 @@ record=~/Documents/go_sv # replays a game from a given filename
   
 </pre>
 #### Conflicting options 
-When conflicting options are set, only the first option is used.
+When mutliple options were set with conflicting Colour assignments, only the first option is used.  
   
 ### Ingame commands
 <pre>
