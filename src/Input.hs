@@ -49,7 +49,7 @@ handleInput (EventKey (Char k) Down _ _) w
         '~'     -> trace ("INFO - cmd: ") $ command w
         '\b'    -> trace ("INFO - cmd: " ++ del) $ w{cmd=del}
         '\SUB'  -> trace ("INFO - Undoing previous move") $ undo w
-        '\DC3'  -> trace "INFO - Saving Game in 'save.dat'" $ unsafeDupablePerformIO $ save "save.dat" w
+        '\DC3'  -> trace ("INFO - Saving Game in 'save.dat'") $ unsafeDupablePerformIO $ save "save.dat" w
                                                           -- Ctrl+s saves game
         '\f'    -> unsafeDupablePerformIO $ load w "save.dat"
         _       -> if(taking_add w) then trace ("INFO - Taking Address + Port: " ++ app) $ w {cmd=app}

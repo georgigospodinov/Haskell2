@@ -299,8 +299,12 @@ data MenuEntryUnclickable = MenuEntryUnclickable { decoration_draw :: Picture }
 menuClick :: Point -> World -> Maybe World
 menuClick (x, y) w = case isInBounds (x, y) (curr_menu w) of
                         Just mb -> Just ((func mb) w)
-                        Nothing -> Nothing
+                        Nothing -> case isInBoundsOptions (x, y) (curr_menu w) of
+                                      Just mo -> Just (handleOption w mo)
+                                      Nothing -> Nothing
 
+handleOption :: World -> MenuEntryOption -> World
+handleOption w mo = ((option_func mo) w) {curr_menu = (replaceMenuOption (curr_menu w) (mo))}
 
 flipMenuOption :: MenuEntryOption -> MenuEntryOption
 flipMenuOption mo = mo {var = (not (var mo)),  option_draw = optionBar (option_location mo) (option_name mo) (not (var mo))}
@@ -308,39 +312,56 @@ flipMenuOption mo = mo {var = (not (var mo)),  option_draw = optionBar (option_l
 replaceMenuOption :: Menu -> MenuEntryOption -> Menu
 replaceMenuOption m mo = m {options = (replace ([mo]) ([flipMenuOption mo]) (options m)) }
 
-{- |  -}
 
 singlePlayerOptions:: World -> World
 singlePlayerOptions w = changeMenu w optionMenu
 
-singlePlayerChoice:: World -> World
-singlePlayerChoice w = w {ai_on = True, is_menu = False}
+localPlayChoice:: World -> World
+localPlayChoice w = w {is_menu = False}
 
-{- |  -}
+--Single Player Option Handlers
+
+{- | Sets game rules to include the rules of three and three and four and four -}
+setThreeAndThree:: (World) -> (World)
+setThreeAndThree w = w {board = (board w) {fair = (not (fair (board w)))}}
+--
+setAI:: (World) -> (World)
+setAI w = w {ai_on = True}
+
+
+{- | Given a world will return world ready to take an address and port for connecting to a host-}
 multiPlayerChoiceLocal:: World -> World
 multiPlayerChoiceLocal w = w {ai_on = False, is_menu = False}
 
+{- | Given a world will return world ready to take an port for becoming a host-}
 multiPlayerChoiceHost:: World -> World
 multiPlayerChoiceHost w = (changeMenu w connectHostChoiceMenu) {taking_port = True}
 
+{- | Given a world will return world ready to take an address and port for connecting to a host-}
 multiPlayerChoiceJoin:: World -> World
 multiPlayerChoiceJoin w = (changeMenu w connectJoinChoiceMenu) {taking_add = True}
 
 -- Online multiplayer setup
 
+{- | Given a world will prepare it for becoming a host-}
 setToHost:: World -> World
 setToHost w = w {to_network = True, is_menu = False, net_data = (net_data w) { useNet = True , isServ = True}, board = b { human = Black }}
                   where b = board w
 
+{- | Given a world will prepare it for connecting to a host-}
 setToJoin:: World -> World
 setToJoin w = w {to_network = True, is_menu = False, net_data = (net_data w) { useNet = True , isServ = False}, board = b { human = White }}
                   where b = board w
 
 -- Taking input at menu
 
+{- | Given a World and a String representing a port will return given world prepared
+for hosting networking -}
 takePort:: World -> String -> World
 takePort w str = w { taking_add = False, net_data = (initNet_Data {addr= (str)}) }
 
+{- | Take World and string as representative of ip address and port, returns world if
+prepared for connecting networking if network/port is valid else returns nothing-}
 takeAdd:: World -> String -> Maybe World
 takeAdd w str = let split = splitOn ":" str in
                   if (length split == 2) then
@@ -350,6 +371,8 @@ takeAdd w str = let split = splitOn ":" str in
 
 -- Submitting input at menu
 
+{- | Takes World where command is representative of ip address and port, returns world if
+prepared for networking if network/port is valid else returns current world-}
 submitAddressAndPort:: World -> World
 submitAddressAndPort w = case takeAdd w (cmd w) of
                           Just w' -> setToJoin $ w'{cmd=""}
@@ -366,16 +389,13 @@ resetWorld:: World -> World
 resetWorld w = World initBoard initMenu Black "" True Nothing Nothing True False False False (blacks w) (whites w) (cell w) Nothing initNet_Data
 
 -- List of possible menus
-initMenu = Menu [singlePlayerEntry, multiPlayerLocalEntry, multiPlayerHostEntry, multiPlayerJoinEntry] [] []
+initMenu = Menu [localEntry, multiPlayerHostEntry, multiPlayerJoinEntry] [] []
+optionMenu = Menu [localPlayBegin, cancelEntry] [fairOption, aiOption] []
 connectJoinChoiceMenu = Menu [cancelEntry, submitTextEntry] [] [getPortTextDecoration]
 connectHostChoiceMenu = Menu [cancelEntry, submitTextEntry2] [] [getPortTextDecoration2]
 
-
-optionMenu = Menu [singlePlayerBegin, cancelEntry] [threeAndThreeOption, forAndFourOption] []
-
---Initial Menu
-singlePlayerEntry = MenuEntry (menuBar (0,50) "Single Player - AI") singlePlayerOptions (0,50)
-multiPlayerLocalEntry = MenuEntry (menuBar (0,20) "Multiplayer - Local") multiPlayerChoiceLocal (0,20)
+--Main Menu Entries
+localEntry = MenuEntry (menuBar (0,50) "Solo/Local Play") singlePlayerOptions (0,50)
 multiPlayerHostEntry = MenuEntry (menuBar (0,-10) "Multiplayer - Host") multiPlayerChoiceHost (0,-10)
 multiPlayerJoinEntry = MenuEntry (menuBar (0,-40) "Multiplayer - Join") multiPlayerChoiceJoin (0,-40)
 
@@ -387,14 +407,10 @@ getPortTextDecoration = MenuEntryUnclickable (menuBar (0, 20) "Address and Port?
 submitTextEntry2 = MenuEntry (menuBar (0, -70) "Setup Connection!") submitPort (0, -70)
 getPortTextDecoration2 = MenuEntryUnclickable (menuBar (0, 20) "Port?")
 
--- Single player options
-singlePlayerBegin = MenuEntry (menuBar (0, -70) "Play!") singlePlayerChoice (0, -70)
-
-threeAndThreeOption = MenuEntryOption (optionBar (0, 50) "3 and 3" False) testFunc "3 and 3" (0, 50) False
-forAndFourOption = MenuEntryOption (optionBar (0, 20) "4 and 4" False) testFunc "4 and 4" (0, 20) False
-
-testFunc :: (World) -> (World)
-testFunc w = w
+-- Local Play Options
+localPlayBegin = MenuEntry (menuBar (0, -70) "Play!") localPlayChoice (0, -70)
+fairOption = MenuEntryOption (optionBar (0, 50) "3 x 3 & 4 x 4" False) setThreeAndThree "3 x 3 & 4 x 4" (0, 50) False
+aiOption = MenuEntryOption (optionBar (0, 20) "AI" False) setAI "AI" (0, 20) False
 
 -- General Purpose
 cancelEntry = MenuEntry (menuBar(0, -100) "Main Menu") resetWorld (0, -100)
@@ -421,9 +437,20 @@ isInBounds (x, y) m = case (length $ filter (isInBar (x,y)) $ entries m) of
                         0 -> Nothing
                         _ -> Just (head (filter (isInBar (x, y)) $ entries m))
 
+{- | Given a point and menu will return a MenuEntryOption if the given point is inside
+the boundaries of any picture of the menu -}
+isInBoundsOptions :: Point -> Menu -> Maybe MenuEntryOption
+isInBoundsOptions (x, y) m = case (length $ filter (isInBarOption (x,y)) $ options m) of
+                        0 -> Nothing
+                        _ -> Just (head (filter (isInBarOption (x, y)) $ options m))
+
 {- | Given a menu entry will return boolean representing if the point is in the menu entry's location in the gui -}
 isInBar :: Point -> MenuEntry -> Bool
 isInBar (x, y) b = ((inRangeX (x) (fst (location b))) && (inRangeY (y) (snd (location b))))
+
+{- | Given a point and MenuEntryOption will return Boolean representing whether the point is in the picture for the MenuEntryOption-}
+isInBarOption :: Point -> MenuEntryOption -> Bool
+isInBarOption (x, y) b = ((inRangeX (x) (fst (option_location b))) && (inRangeY (y) (snd (option_location b))))
 
 {- | Given two floats representing x positionswith one representing x position of point and other
 representing x position of menuBar will return if the value is in the menu bar's x coordinates -}
@@ -452,21 +479,23 @@ menuText (x, y) str = (translate ((x - bar_side1/2) + bar_margin)
                               ((y - bar_side2/2) + bar_margin)
                               $ scale bar_text_scale bar_text_scale $ Text str)
 
-
+{- | Given a point, text and a value representing an option location, name and value will produce a picture representing
+an option and it's current value at that point -}
 optionBar :: Point -> String -> Bool -> Picture
 optionBar (x, y) str b = Pictures [menuBar (x, y) str, optionStatusDisplay (x, y) b]
 
-
+{- | Given a point and Bool will return a box with a text value representing the boolean value
+at given point -}
 optionStatusDisplay :: Point -> Bool -> Picture
 optionStatusDisplay (x, y) b = Pictures [optionStatusBox (x, y), (optionStatusText (x, y) b)]
 
-
+{- | Given a point will produce a picture of an box at that point -}
 optionStatusBox :: Point -> Picture
 optionStatusBox (x, y) = translate (x + bar_side1/2 + bar_side2/2) y $ Pictures [(Color (makeColor menu_box_R menu_box_G
                     menu_box_B menu_box_A) $ polygon (rectanglePath (bar_side2*2)
                     (bar_side2))), lineLoop (rectanglePath (bar_side2*2) (bar_side2))]
 
-
+{- | Given a point and a value will return a text picture of that given value as on or off (True or False)-}
 optionStatusText :: Point -> Bool -> Picture
 optionStatusText (x, y) b = (translate ((x - bar_side2) + bar_margin + bar_side1/2 + bar_side2/2)
                               ((y - bar_side2/2) + bar_margin)
