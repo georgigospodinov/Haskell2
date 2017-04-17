@@ -12,7 +12,6 @@ import Network.Socket
 import Data.Either.Unwrap
 import Data.List.Split
 import Data.List.Utils
-import Data.List.Unique
 import Data.List
 import System.IO.Unsafe
 
@@ -339,12 +338,15 @@ menuClick (x, y) w = case isInBounds (x, y) (curr_menu w) of
                                       Just mo -> Just (handleOption w mo)
                                       Nothing -> Nothing
 
+-- | Handles function of option and updates option in menu to display current state
 handleOption :: World -> MenuEntryOption -> World
 handleOption w mo = ((option_func mo) w) {curr_menu = (replaceMenuOption (curr_menu w) (mo))}
 
+-- | Changes display of option to opposite value of current value
 flipMenuOption :: MenuEntryOption -> MenuEntryOption
 flipMenuOption mo = mo {var = (not (var mo)),  option_draw = optionBar (option_location mo) (option_name mo) (not (var mo))}
 
+-- | Taking Menu and MenuEntryOption will return 
 replaceMenuOption :: Menu -> MenuEntryOption -> Menu
 replaceMenuOption m mo = m {options = (replace ([mo]) ([flipMenuOption mo]) (options m)) }
 
@@ -362,7 +364,7 @@ setThreeAndThree:: (World) -> (World)
 setThreeAndThree w = w {board = (board w) {fair = (not (fair (board w)))}}
 --
 setAI:: (World) -> (World)
-setAI w = w {ai_on = True}
+setAI w = w {ai_on = (not (ai_on w))}
 
 setHardAI:: (World) -> (World)
 setHardAI w = (w {ai_on = True, ai_level = 3}) {curr_menu = (replaceMenuOption (curr_menu w) (aiOption))}
