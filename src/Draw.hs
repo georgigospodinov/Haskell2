@@ -9,7 +9,7 @@ import Debug.Trace
     This will need to extract the Board from the world state and draw it
     as a grid plus pieces. -}
 drawWorld :: World -> Picture
-drawWorld w = if is_menu w then Pictures [drawMenu $ curr_menu w]
+drawWorld w = if is_menu w then  Pictures [drawMenu $ w]
               else if (won $ board w) /= Nothing then
                     Pictures [winmsg (size $ board w) (won (board w))]
               else Pictures [grid w,
@@ -25,14 +25,18 @@ grid w = Pictures [square (x, y) w |
                   where bs = size $ board w
 
 
-
 -- | Draws a square by using the bmp picture and translating it to the right coordinate
 square :: Point -> World -> Picture
 square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
 
 -- | Draws the menu using the Gloss Pictures specified in the world.
-drawMenu :: Menu -> Picture
-drawMenu m = Pictures ([menu_draw x | x <- (entries m)] ++ [decoration_draw x | x <- (decorations m)])
+drawMenu :: World -> Picture
+drawMenu w = let m = curr_menu w in
+               if (taking_add w || taking_port w) then Pictures ([menu_draw x | x <- (entries m)] ++ [decoration_draw x | x <- (decorations m)] ++ [drawCurrentCmd w])
+               else Pictures ([menu_draw x | x <- (entries m)] ++ [decoration_draw x | x <- (decorations m)])
+
+drawCurrentCmd:: World -> Picture
+drawCurrentCmd w = (menuBar (0,-10) (cmd w))
 
 -- | Draws all the board squares (tiles). There should be size*size of them.
 tiles :: World -> Picture

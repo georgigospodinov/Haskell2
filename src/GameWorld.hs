@@ -73,26 +73,27 @@ data Board = Board { size   :: Int,               -- the size of the board
   deriving (Show, Generic)
 
 -- | Default board is 6x6, target is 3 in a row, no initial pieces and not fair
-initBoard = Board 6 3 Black [] Nothing False
+initBoard = Board 9 5 Black [] Nothing False
 
 {- | Overall state is the board and whose turn it is, plus any further
      information about the world (this may later include, for example, player
      names, timers, information about rule variants, etc) -}
-data World = World { board      :: Board,         -- the board
-                     curr_menu  :: Menu,
-                     turn       :: Col,           -- the colour of the player to play now
-                     cmd        :: String,        -- the last command
-                     ai_on      :: Bool,          -- if the ai is used
-                     replay     :: Maybe String,  -- if the game is a replay of a recorded game - filename of rec file
-                     recording  :: Maybe String,  -- if the game should be recorded - filename or rec file
-                     is_menu    :: Bool,          -- if the menu should be displayed
-                     to_network :: Bool,
-                     taking_add :: Bool,
-                     blacks     :: Picture,       -- the Gloss Picture representing a black stone
-                     whites     :: Picture,       -- the Gloss Picture representing a white stone
-                     cell       :: Picture,       -- the Gloss Picture representing a cell in board
-                     prev       :: Maybe World,   -- the last world state (for undo action)
-                     net_data   :: Net_Data       -- the network data to use
+data World = World { board        :: Board,         -- the board
+                     curr_menu    :: Menu,
+                     turn         :: Col,           -- the colour of the player to play now
+                     cmd          :: String,        -- the last command
+                     ai_on        :: Bool,          -- if the ai is used
+                     replay       :: Maybe String,  -- if the game is a replay of a recorded game - filename of rec file
+                     recording    :: Maybe String,  -- if the game should be recorded - filename or rec file
+                     is_menu      :: Bool,          -- if the menu should be displayed
+                     to_network   :: Bool,          -- if the game has to set up networking
+                     taking_add   :: Bool,          -- if the game is taking the address and port for networking
+                     taking_port  :: Bool,          -- if the game is taking the port for networking
+                     blacks       :: Picture,       -- the Gloss Picture representing a black stone
+                     whites       :: Picture,       -- the Gloss Picture representing a white stone
+                     cell         :: Picture,       -- the Gloss Picture representing a cell in board
+                     prev         :: Maybe World,   -- the last world state (for undo action)
+                     net_data     :: Net_Data       -- the network data to use
                    }
     deriving (Generic)
 
@@ -102,7 +103,7 @@ pic w Black = blacks w
 pic w White = whites w
 
 -- | Defualt initial world using initBoard and initNet_Data
-initWorld = World initBoard initMenu Black "" True Nothing Nothing True False False
+initWorld = World initBoard initMenu Black "" True Nothing Nothing True False False False
             (Color black $ circleSolid (sq_side/2)) -- black circle (bmp pics loaded in main method replacing these)
             (Color white $ circleSolid (sq_side/2)) -- white circle
             (Color sq_border $ Line                 -- black box
@@ -232,7 +233,7 @@ instance Serialize World where
                  ai_on   <- get
                  recording  <- get
                  prev   <- get
-                 return (World board initMenu turn cmd ai_on Nothing recording False False False
+                 return (World board initMenu turn cmd ai_on Nothing recording False False False False
                             (blacks initWorld) (whites initWorld) (cell initWorld) prev (net_data initWorld))
 
 -- | Saves the world to a given file path.
@@ -287,9 +288,11 @@ singlePlayerChoice w = w {ai_on = True, is_menu = False}
 multiPlayerChoiceLocal:: World -> World
 multiPlayerChoiceLocal w = w {ai_on = False, is_menu = False}
 
-
 multiPlayerChoiceHost:: World -> World
-multiPlayerChoiceHost w = (changeMenu w connectChoiceMenu) {taking_add = True}
+multiPlayerChoiceHost w = (changeMenu w connectHostChoiceMenu) {taking_port = True}
+
+multiPlayerChoiceJoin:: World -> World
+multiPlayerChoiceJoin w = (changeMenu w connectJoinChoiceMenu) {taking_add = True}
 
 -- Online multiplayer setup
 
@@ -297,10 +300,15 @@ setToHost:: World -> World
 setToHost w = w {to_network = True, is_menu = False, net_data = (net_data w) { useNet = True , isServ = True}, board = b { human = Black }}
                   where b = board w
 
-
 setToJoin:: World -> World
 setToJoin w = w {to_network = True, is_menu = False, net_data = (net_data w) { useNet = True , isServ = False}, board = b { human = White }}
                   where b = board w
+
+
+-- Taking input at menu
+
+takePort:: World -> String -> World
+takePort w str = w { taking_add = False, net_data = (initNet_Data {addr= (str)}) }
 
 takeAdd:: World -> String -> Maybe World
 takeAdd w str = let split = splitOn ":" str in
@@ -309,19 +317,29 @@ takeAdd w str = let split = splitOn ":" str in
                   else Nothing
 
 
+-- Submitting input at menu
+
+submitAddressAndPort:: World -> World
+submitAddressAndPort w = case takeAdd w (cmd w) of
+                          Just w' -> setToJoin $ w'{cmd=""}
+                          Nothing -> w
+
+submitPort:: World -> World
+submitPort w = setToHost $ (takePort w (cmd w))
+
 {- |  -}
-multiPlayerChoiceJoin:: World -> World
-multiPlayerChoiceJoin w = w {to_network = True, is_menu = False, net_data = (net_data w) { useNet = True , isServ = False}, board = b { human = White }}
-                          where b = board w
+-- multiPlayerChoiceJoin:: World -> World
+-- multiPlayerChoiceJoin w = w {to_network = True, is_menu = False, net_data = (net_data w) { useNet = True , isServ = False}, board = b { human = White }}
+--                           where b = board w
 
 {- | Resets world to initial world -}
 resetWorld:: World -> World
-resetWorld w = initWorld
+resetWorld w = World initBoard initMenu Black "" True Nothing Nothing True False False False (blacks w) (whites w) (cell w) Nothing initNet_Data
 
 -- List of possible menus
 initMenu = Menu [singlePlayerEntry, multiPlayerLocalEntry, multiPlayerHostEntry, multiPlayerJoinEntry] []
-connectChoiceMenu = Menu [cancelEntry] [getPortTextDecoration, getPortEntryDecoration]
-
+connectJoinChoiceMenu = Menu [cancelEntry, submitTextEntry] [getPortTextDecoration]
+connectHostChoiceMenu = Menu [cancelEntry, submitTextEntry2] [getPortTextDecoration2]
 
 --Initial Menu
 singlePlayerEntry = MenuEntry (menuBar (0,50) "Single Player - AI") singlePlayerChoice (0,50)
@@ -330,15 +348,19 @@ multiPlayerHostEntry = MenuEntry (menuBar (0,-10) "Multiplayer - Host") multiPla
 multiPlayerJoinEntry = MenuEntry (menuBar (0,-40) "Multiplayer - Join") multiPlayerChoiceJoin (0,-40)
 
 -- Getting Port and Address
+submitTextEntry = MenuEntry (menuBar (0, -50) "Setup Connection!") submitAddressAndPort (0, -50)
 getPortTextDecoration = MenuEntryUnclickable (menuBar (0, 20) "Address and Port?")
-getPortEntryDecoration = MenuEntryUnclickable (menuBar (0,-10) "")
-cancelEntry = MenuEntry (menuBar(0, -70) "Cancel") resetWorld (0, -60)
+
+-- Getting Port
+submitTextEntry2 = MenuEntry (menuBar (0, -50) "Setup Connection!") submitPort (0, -50)
+getPortTextDecoration2 = MenuEntryUnclickable (menuBar (0, 20) "Port?")
 
 -- General Purpose
+cancelEntry = MenuEntry (menuBar(0, -80) "Cancel") resetWorld (0, -80)
+
 
 changeMenu :: World -> Menu -> World
 changeMenu w m = w {curr_menu = m};
-
 
 
 {- | MenuEntry data containing dimensions for drawing menu boxes and taking input-}
