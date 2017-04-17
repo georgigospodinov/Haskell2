@@ -145,41 +145,41 @@ checkWon b = if longest b Black == target b then Just Black
 
 -- | returns true if board follows rules, false if rule is broken
 checkRules :: Board -> Bool
-checkRules b = if (fair b) then (check3and3 b Black) && (check4and4 b Black 4) -- fair
-               else (check3and3 b Black) && (check3and3 b White) && (check4and4 b Black 4) && (check4and4 b White 4) -- not fair
+checkRules b = if (fair b) then (checkRule b Black 3) && (checkRule b Black 4) -- fair
+               else (checkRule b Black 3) && (checkRule b White 3) && (checkRule b Black 4) && (checkRule b White 4) -- not fair
 
--- | returns true if board follows rules, false if rule is broken
-check4and4 :: Board -> Col -> Int -> Bool
-check4and4 b c i = num_rows_of_4 < 2
-                where num_rows_of_4 = Prelude.sum ( all_rows_of_4 )
-                      all_rows_of_4 = map (\p -> length (rows_of_4 p) ) (pieces b)
-                      rows_of_4 piece = filter (\ x -> ( (fst x) == i ) ) ( map ( \d -> descend b c d (fst piece) ) [N, NE, E, SE] )
+-- | returns true if board follows a given rule, false if rule is broken
+checkRule :: Board -> Col -> Int -> Bool
+checkRule b c rule = num_rows_of_4 < 2
+                where num_rows_of_4 = Prelude.sum $ all_rows_of_4                                     -- Sum all numbers of rows
+                      all_rows_of_4 = map (\p -> length (filtered_descend_list $ fst p) ) (pieces b)  -- Produces a list of all numbers of rows_of_length_4
 
--- | returns true if board follows rules, false if rule is broken
-check3and3 :: Board -> Col -> Bool
-check3and3 b c = trace ("sum: " ++ show num_all_unblocked_rows) $ num_all_unblocked_rows < 2
-                where num_all_unblocked_rows = Prelude.sum $ all_unblocked_rows
-                      all_unblocked_rows = map (\p -> length (filtered_descend_list (fst p))) (pieces b)
+                      filtered_descend_list :: Position -> [Street]                                   -- Filters all rows following the given rule/filter
+                      filtered_descend_list pos = filter (if rule==3 then filter3and3 else filter4and4) (descend_list_per_piece pos)
 
-                      filtered_descend_list :: Position -> [Street]
-                      filtered_descend_list pos = printStreets $ filter filterNonBlocked (descend_list_per_piece pos)
+                      descend_list_per_piece :: Position -> [Street]                                  -- Produces a list of all rows starting from a Position
+                      descend_list_per_piece pos = map ( \d -> (pos, d, (descend b c d pos)) ) [N, NE, E, SE] -- only use 1/2 of all directions to avoid duplication of rows
 
-                      descend_list_per_piece :: Position -> [Street]
-                      descend_list_per_piece pos = map ( \d -> (pos, d, (descend b c d pos)) ) [N, NE, E, SE]            -- produces [Street]
+                      {- | filters a Street whose:
+                              length is 4 and length from other side is also 4 -}
+                      filter4and4 :: Street -> Bool
+                      filter4and4 (pos, d, (len, bl))= (len == 4) && (fst (descendOpp pos d) == 4)
 
-                      filterNonBlocked :: Street -> Bool
-                      filterNonBlocked (pos, d, (len, bl)) = (len == 3) && ((not bl) && (not $ snd (descendOpp pos d))) -- length==3 && ((not blocked E) || (not blocked W))
+                      {- | filters a Street whose:
+                              length is 3 and it is not blocked from this side and it is not blocked
+                              from the other side and the length from the other size is also 3
+                           This ensures that rows of 4 are not mistakenly regarded as rows of 3 if
+                           checked from the middle and blockage on both ends is checked.-}
+                      filter3and3 :: Street -> Bool
+                      filter3and3 (pos, d, (len, bl)) = (len == 3) && ((not bl) && (not $ snd (descendOpp pos d))) && (fst (descendOpp pos d) == 3)
 
-                      descendOpp :: Position -> Direction -> (Int, Bool)
-                      descendOpp pos dir = trace ("start=" ++ show pos ++ ">" ++ show (findEnd b c dir pos pos) ) $descend b c (opp dir) (findEnd b c dir pos pos)
+                      descendOpp :: Position -> Direction -> (Int, Bool)                              -- descends down the opposite end of a row backward
+                      descendOpp pos dir = descend b c (opp dir) (findEnd b c dir pos pos)
 
+{- | Street type used in 3and3 and 4and4. Stores the result of a descend + extra info.
+     Touple storing the Position, the Direction of the row, and the result of
+     the check (Length of row, if row is blocked). -}
 type Street = (Position, Direction, (Int, Bool))
-
-printStreet :: Street -> Street
-printStreet (p,d,(i,b)) = (trace ("street: " ++ show p ++ "," ++ show d ++ ",(" ++ show i ++ "," ++ show b ++ ")")) (p,d,(i,b))
-
-printStreets :: [Street] -> [Street]
-printStreets xs = map (\x -> printStreet x) xs
 
 -- | Direction data record
 data Direction = N | S | E | W | NE | SE | NW | SW
@@ -227,9 +227,9 @@ findEnd :: Board -> Col -> Direction
                         -> Position -- ^ end of row
 findEnd b c dir (lx,ly) (x,y) = if outOfBounds b (x,y) then (lx,ly)
                         else if colOf b (x,y) == Just (other c) then (lx,ly)
-                        else if colOf b (x,y) == Just c then (x, y)
+                        else if colOf b (x,y) == Just c then (nx, ny)
                         else (lx,ly)  -- empty
-                        where (nx, ny) = findEnd b c dir (x,y) $ next (x,y) dir
+                        where (nx, ny) = findEnd b c dir (x,y) (next (x,y) dir)
 
 {- | Finds the longest row of pieces of 1 colour that are not blocked by enemy
      pieces or are a victory row. Descends from every square into all directions. -}
