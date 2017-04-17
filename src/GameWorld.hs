@@ -11,6 +11,8 @@ import GHC.Generics
 import Network.Socket
 import Data.Either.Unwrap
 import Data.List.Split
+import Data.List.Utils
+import Data.List
 
 import System.IO.Unsafe
 
@@ -236,6 +238,13 @@ instance Serialize World where
                  return (World board initMenu turn cmd ai_on Nothing recording False False False False
                             (blacks initWorld) (whites initWorld) (cell initWorld) prev (net_data initWorld))
 
+undo :: World -> World
+undo w = case prev w of                         -- Ctrl+z ("Undo")
+                Nothing -> w                      -- if there is nothing to undo then keep same world
+                Just w' -> if ai_on w then case prev w' of        -- attempt to revert 2 worlds
+                                            Nothing -> w'
+                                            Just w'' -> w''
+                           else w'
 -- | Saves the world to a given file path.
 save :: FilePath -> World -> IO World
 save pth wd = do Data.ByteString.writeFile pth (encode wd)
@@ -265,12 +274,25 @@ load w pth = do serWorld <- Data.ByteString.readFile pth
 {- | Menu data containing MenuEntries and decorations (unclickable Gloss
      pictures like lines or titles) -}
 data Menu = Menu { entries      :: [MenuEntry],
+                   options      :: [MenuEntryOption],
                    decorations  :: [MenuEntryUnclickable]}
 
 data MenuEntry = MenuEntry { menu_draw  :: Picture,
                              func       :: (World -> World),
                              location   :: Point
                            }
+
+
+
+data MenuEntryOption = MenuEntryOption { option_draw       :: Picture,
+                                         option_func       :: ((World) -> (World)),
+                                         option_name       :: String,
+                                         option_location   :: Point,
+                                         var               :: Bool
+                                       }
+
+instance Eq MenuEntryOption where
+  x == y = (option_location x == option_location y)
 
 data MenuEntryUnclickable = MenuEntryUnclickable { decoration_draw :: Picture }
 
@@ -280,7 +302,17 @@ menuClick (x, y) w = case isInBounds (x, y) (curr_menu w) of
                         Nothing -> Nothing
 
 
+flipMenuOption :: MenuEntryOption -> MenuEntryOption
+flipMenuOption mo = mo {var = (not (var mo)),  option_draw = optionBar (option_location mo) (option_name mo) (not (var mo))}
+
+replaceMenuOption :: Menu -> MenuEntryOption -> Menu
+replaceMenuOption m mo = m {options = (replace ([mo]) ([flipMenuOption mo]) (options m)) }
+
 {- |  -}
+
+singlePlayerOptions:: World -> World
+singlePlayerOptions w = changeMenu w optionMenu
+
 singlePlayerChoice:: World -> World
 singlePlayerChoice w = w {ai_on = True, is_menu = False}
 
@@ -304,7 +336,6 @@ setToJoin:: World -> World
 setToJoin w = w {to_network = True, is_menu = False, net_data = (net_data w) { useNet = True , isServ = False}, board = b { human = White }}
                   where b = board w
 
-
 -- Taking input at menu
 
 takePort:: World -> String -> World
@@ -324,41 +355,51 @@ submitAddressAndPort w = case takeAdd w (cmd w) of
                           Just w' -> setToJoin $ w'{cmd=""}
                           Nothing -> w
 
+{- | Takes current command stored in the world as a port, returns world with port
+variable and other variables set for networking -}
 submitPort:: World -> World
 submitPort w = setToHost $ (takePort w (cmd w))
 
-{- |  -}
--- multiPlayerChoiceJoin:: World -> World
--- multiPlayerChoiceJoin w = w {to_network = True, is_menu = False, net_data = (net_data w) { useNet = True , isServ = False}, board = b { human = White }}
---                           where b = board w
 
-{- | Resets world to initial world -}
+{- | Resets world to initial world, keeps images for pieces and board -}
 resetWorld:: World -> World
 resetWorld w = World initBoard initMenu Black "" True Nothing Nothing True False False False (blacks w) (whites w) (cell w) Nothing initNet_Data
 
 -- List of possible menus
-initMenu = Menu [singlePlayerEntry, multiPlayerLocalEntry, multiPlayerHostEntry, multiPlayerJoinEntry] []
-connectJoinChoiceMenu = Menu [cancelEntry, submitTextEntry] [getPortTextDecoration]
-connectHostChoiceMenu = Menu [cancelEntry, submitTextEntry2] [getPortTextDecoration2]
+initMenu = Menu [singlePlayerEntry, multiPlayerLocalEntry, multiPlayerHostEntry, multiPlayerJoinEntry] [] []
+connectJoinChoiceMenu = Menu [cancelEntry, submitTextEntry] [] [getPortTextDecoration]
+connectHostChoiceMenu = Menu [cancelEntry, submitTextEntry2] [] [getPortTextDecoration2]
+
+
+optionMenu = Menu [singlePlayerBegin, cancelEntry] [threeAndThreeOption, forAndFourOption] []
 
 --Initial Menu
-singlePlayerEntry = MenuEntry (menuBar (0,50) "Single Player - AI") singlePlayerChoice (0,50)
+singlePlayerEntry = MenuEntry (menuBar (0,50) "Single Player - AI") singlePlayerOptions (0,50)
 multiPlayerLocalEntry = MenuEntry (menuBar (0,20) "Multiplayer - Local") multiPlayerChoiceLocal (0,20)
 multiPlayerHostEntry = MenuEntry (menuBar (0,-10) "Multiplayer - Host") multiPlayerChoiceHost (0,-10)
 multiPlayerJoinEntry = MenuEntry (menuBar (0,-40) "Multiplayer - Join") multiPlayerChoiceJoin (0,-40)
 
 -- Getting Port and Address
-submitTextEntry = MenuEntry (menuBar (0, -50) "Setup Connection!") submitAddressAndPort (0, -50)
+submitTextEntry = MenuEntry (menuBar (0, -70) "Setup Connection!") submitAddressAndPort (0, -70)
 getPortTextDecoration = MenuEntryUnclickable (menuBar (0, 20) "Address and Port?")
 
 -- Getting Port
-submitTextEntry2 = MenuEntry (menuBar (0, -50) "Setup Connection!") submitPort (0, -50)
+submitTextEntry2 = MenuEntry (menuBar (0, -70) "Setup Connection!") submitPort (0, -70)
 getPortTextDecoration2 = MenuEntryUnclickable (menuBar (0, 20) "Port?")
 
+-- Single player options
+singlePlayerBegin = MenuEntry (menuBar (0, -70) "Play!") singlePlayerChoice (0, -70)
+
+threeAndThreeOption = MenuEntryOption (optionBar (0, 50) "3 and 3" False) testFunc "3 and 3" (0, 50) False
+forAndFourOption = MenuEntryOption (optionBar (0, 20) "4 and 4" False) testFunc "4 and 4" (0, 20) False
+
+testFunc :: (World) -> (World)
+testFunc w = w
+
 -- General Purpose
-cancelEntry = MenuEntry (menuBar(0, -80) "Cancel") resetWorld (0, -80)
+cancelEntry = MenuEntry (menuBar(0, -100) "Main Menu") resetWorld (0, -100)
 
-
+{- | Takes world and menu, returns world with current menu set to given menu-}
 changeMenu :: World -> Menu -> World
 changeMenu w m = w {curr_menu = m};
 
@@ -369,34 +410,64 @@ bar_side2 = 20::Float
 bar_text_scale = 0.008*bar_side2
 bar_margin = 2::Float
 
-{- |  -}
+menu_box_R = 190::Float
+menu_box_G = 200::Float
+menu_box_B = 255::Float
+menu_box_A = 100::Float
+
+{- | Given a point and a menu will return menuEntry, in menu, point is in, if it is in one, otherwise returns nothing -}
 isInBounds :: Point -> Menu -> Maybe MenuEntry
 isInBounds (x, y) m = case (length $ filter (isInBar (x,y)) $ entries m) of
                         0 -> Nothing
                         _ -> Just (head (filter (isInBar (x, y)) $ entries m))
 
-{- |  -}
+{- | Given a menu entry will return boolean representing if the point is in the menu entry's location in the gui -}
 isInBar :: Point -> MenuEntry -> Bool
 isInBar (x, y) b = ((inRangeX (x) (fst (location b))) && (inRangeY (y) (snd (location b))))
 
-{- |  -}
+{- | Given two floats representing x positionswith one representing x position of point and other
+representing x position of menuBar will return if the value is in the menu bar's x coordinates -}
 inRangeX :: Float -> Float -> Bool
-inRangeX x1 x2 = ((x1 < (x2 + bar_side1)) && (x1) > (x2 - bar_side1))
+inRangeX x1 x2 = ((x1 < (x2 + bar_side1/2)) && (x1) > (x2 - bar_side1/2))
 
-{- |  -}
+{- | Given two floats representing y positions with one representing x position of point and other
+representing x position of menuBar will return if the value is in the menu bar's x coordinates -}
 inRangeY :: Float -> Float -> Bool
-inRangeY y1 y2 = ((y1 < (y2 + bar_side2)) && (y1) > (y2 - bar_side2))
+inRangeY y1 y2 = ((y1 < (y2 + bar_side2/2)) && (y1) > (y2 - bar_side2/2))
 
-{- |  -}
+{- | Given a point and a string generates a menu bar picture containing given text -}
 menuBar :: Point -> String -> Picture
 menuBar (x, y) str = Pictures [(menuBox (x, y)), (menuText (x, y) str)]
 
-{- |  -}
+{- | Given a point will return  -}
 menuBox :: Point -> Picture
-menuBox (x, y) = translate x y $ Pictures [(Color (makeColor 190 200 255 100) $ polygon (rectanglePath (bar_side1) (bar_side2))), lineLoop (rectanglePath (bar_side1) (bar_side2))]
+menuBox (x, y) = translate x y $ Pictures [(Color (makeColor menu_box_R menu_box_G
+                    menu_box_B menu_box_A) $ polygon (rectanglePath (bar_side1)
+                    (bar_side2))), lineLoop (rectanglePath (bar_side1) (bar_side2))]
 
-{- |  -}
+{- | Given a point and String will produce a picture of the text as would fit within
+a text bar -}
 menuText :: Point -> String -> Picture
 menuText (x, y) str = (translate ((x - bar_side1/2) + bar_margin)
                               ((y - bar_side2/2) + bar_margin)
                               $ scale bar_text_scale bar_text_scale $ Text str)
+
+
+optionBar :: Point -> String -> Bool -> Picture
+optionBar (x, y) str b = Pictures [menuBar (x, y) str, optionStatusDisplay (x, y) b]
+
+
+optionStatusDisplay :: Point -> Bool -> Picture
+optionStatusDisplay (x, y) b = Pictures [optionStatusBox (x, y), (optionStatusText (x, y) b)]
+
+
+optionStatusBox :: Point -> Picture
+optionStatusBox (x, y) = translate (x + bar_side1/2 + bar_side2/2) y $ Pictures [(Color (makeColor menu_box_R menu_box_G
+                    menu_box_B menu_box_A) $ polygon (rectanglePath (bar_side2*2)
+                    (bar_side2))), lineLoop (rectanglePath (bar_side2*2) (bar_side2))]
+
+
+optionStatusText :: Point -> Bool -> Picture
+optionStatusText (x, y) b = (translate ((x - bar_side2) + bar_margin + bar_side1/2 + bar_side2/2)
+                              ((y - bar_side2/2) + bar_margin)
+                              $ scale bar_text_scale bar_text_scale $ Text (if b then"On" else "Off"))

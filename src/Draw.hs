@@ -33,7 +33,9 @@ square (x, y) w = translate (x+sq_side/2) (y+sq_side/2) $ cell w
 drawMenu :: World -> Picture
 drawMenu w = let m = curr_menu w in
                if (taking_add w || taking_port w) then Pictures ([menu_draw x | x <- (entries m)] ++ [decoration_draw x | x <- (decorations m)] ++ [drawCurrentCmd w])
-               else Pictures ([menu_draw x | x <- (entries m)] ++ [decoration_draw x | x <- (decorations m)])
+               else Pictures ([menu_draw x | x <- (entries m)] ++ [decoration_draw x | x <- (decorations m)] ++ [option_draw x | x <- (options m)])
+
+
 
 drawCurrentCmd:: World -> Picture
 drawCurrentCmd w = (menuBar (0,-10) (cmd w))

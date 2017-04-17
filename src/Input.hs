@@ -48,11 +48,7 @@ handleInput (EventKey (Char k) Down _ _) w
     = case k of
         '~'     -> trace ("INFO - cmd: ") $ command w
         '\b'    -> trace ("INFO - cmd: " ++ del) $ w{cmd=del}
-        '\SUB'  -> case prev w of                         -- Ctrl+z ("Undo")
-                        Nothing -> w                      -- if there is nothing to undo then keep same world
-                        Just w' -> case prev w' of        -- attempt to revert 2 worlds
-                                        Nothing -> w'
-                                        Just w'' -> w''
+        '\SUB'  -> trace ("INFO - Undoing previous move") $ undo w
         '\DC3'  -> trace "INFO - Saving Game in 'save.dat'" $ unsafeDupablePerformIO $ save "save.dat" w
                                                           -- Ctrl+s saves game
         '\f'    -> unsafeDupablePerformIO $ load w "save.dat"
