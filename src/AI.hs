@@ -72,6 +72,7 @@ getSelector :: String -> Selector
 getSelector "w" = worst
 getSelector "b" = best
 
+-- | Function swaps string representing selectors
 switch :: String -> String
 switch "b" = "w"
 switch "w" = "b"

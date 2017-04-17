@@ -338,12 +338,15 @@ menuClick (x, y) w = case isInBounds (x, y) (curr_menu w) of
                                       Just mo -> Just (handleOption w mo)
                                       Nothing -> Nothing
 
+-- | Handles function of option and updates option in menu to display current state
 handleOption :: World -> MenuEntryOption -> World
 handleOption w mo = ((option_func mo) w) {curr_menu = (replaceMenuOption (curr_menu w) (mo))}
 
+-- | Changes display of option to opposite value of current value
 flipMenuOption :: MenuEntryOption -> MenuEntryOption
 flipMenuOption mo = mo {var = (not (var mo)),  option_draw = optionBar (option_location mo) (option_name mo) (not (var mo))}
 
+-- | Taking Menu and MenuEntryOption will return 
 replaceMenuOption :: Menu -> MenuEntryOption -> Menu
 replaceMenuOption m mo = m {options = (replace ([mo]) ([flipMenuOption mo]) (options m)) }
 

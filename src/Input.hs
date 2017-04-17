@@ -62,7 +62,7 @@ handleInput (EventKey (Char k) Down _ _) w
             init' xs = init xs
 handleInput e w = w
 
--- | hint command
+-- | Handles commands longer than a single character
 command :: World -> World
 command w = if (taking_add w) then
               case takeAdd w (cmd w) of
