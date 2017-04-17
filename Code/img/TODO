@@ -1,0 +1,68 @@
+For a mark of 17+ we need: Basic, All Easy, at least 3/4 Medium.
+    -https://studres.cs.st-andrews.ac.uk/CS2006/Practicals/Haskell2/Haskell2.pdf #Marking Guidelines
+
+BASIC SPECIFICATION
+
+BASIC IMPLEMENTATION
+[x] Draw Board
+[x] Player can place piece
+
+BASIC RULES
+[] Basic Game Specification
+    [x] Black plays first
+    [x] Can only place piece on empty square
+    [x] Player wins when 3 in a row
+
+BASIC AI
+[x] AI.hs move generator
+    [x] Generates all possible moves
+
+[x] Board.hs
+    [x] Evaluates board
+
+
+
+EXTENSIONS
+
+EASY 1
+[x] Recognize command line arguments
+
+EASY 2
+[x] Implement UNDO
+
+EASY 3
+[x] Implement Rule Variants
+
+MEDIUM 1
+[] In-game option setting
+    [x] Handle Input Key presses
+    [] Change World
+
+MEDIUM 2
+[x] Use bitmap images instead of plain pictures
+    [x] For pieces
+    [x] For board?
+
+MEDIUM 3
+[] Hints
+
+MEDIUM 4
+[x] Save game
+[-] Load game
+
+MEDIUM/HARD 1
+[] Time Limits
+[] "PAUSE" game
+
+MEDIUM/HARD 2
+[] Game mods (Renju, Pente)
+
+HARD 1
+[-] Record games in .sgf files
+[?] Replay games
+
+HARD 2
+[] AI-s with different skills/strategies
+
+HARD 3
+[x] Network play
