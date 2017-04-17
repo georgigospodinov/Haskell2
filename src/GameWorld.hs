@@ -12,8 +12,8 @@ import Network.Socket
 import Data.Either.Unwrap
 import Data.List.Split
 import Data.List.Utils
+import Data.List.Unique
 import Data.List
-
 import System.IO.Unsafe
 
 import Debug.Trace
@@ -145,8 +145,8 @@ checkWon b = if longest b Black == target b then Just Black
 
 -- | returns true if board follows rules, false if rule is broken
 checkRules :: Board -> Bool
-checkRules b = if (fair b) then (check3and3 b Black 3) && (check4and4 b Black 4) -- fair
-               else (check3and3 b Black 3) && (check3and3 b White 3) && (check4and4 b Black 4) && (check4and4 b White 4) -- not fair
+checkRules b = if (fair b) then (check3and3 b Black) && (check4and4 b Black 4) -- fair
+               else (check3and3 b Black) && (check3and3 b White) && (check4and4 b Black 4) && (check4and4 b White 4) -- not fair
 
 -- | returns true if board follows rules, false if rule is broken
 check4and4 :: Board -> Col -> Int -> Bool
@@ -156,11 +156,30 @@ check4and4 b c i = num_rows_of_4 < 2
                       rows_of_4 piece = filter (\ x -> ( (fst x) == i ) ) ( map ( \d -> descend b c d (fst piece) ) [N, NE, E, SE] )
 
 -- | returns true if board follows rules, false if rule is broken
-check3and3 :: Board -> Col -> Int -> Bool
-check3and3 b c i = num_all_u_i_rows < 2
-                where num_all_u_i_rows = Prelude.sum $ all_unblock_i_rows
-                      all_unblock_i_rows = map (\p -> length (unblock_i_rows p) ) (pieces b)
-                      unblock_i_rows piece = filter (\ x -> ( (fst x) == i ) && not (snd x) ) ( map ( \d -> descend b c d (fst piece) ) [N, NE, E, SE] )
+check3and3 :: Board -> Col -> Bool
+check3and3 b c = trace ("sum: " ++ show num_all_unblocked_rows) $ num_all_unblocked_rows < 2
+                where num_all_unblocked_rows = Prelude.sum $ all_unblocked_rows
+                      all_unblocked_rows = map (\p -> length (filtered_descend_list (fst p))) (pieces b)
+
+                      filtered_descend_list :: Position -> [Street]
+                      filtered_descend_list pos = printStreets $ filter filterNonBlocked (descend_list_per_piece pos)
+
+                      descend_list_per_piece :: Position -> [Street]
+                      descend_list_per_piece pos = map ( \d -> (pos, d, (descend b c d pos)) ) [N, NE, E, SE]            -- produces [Street]
+
+                      filterNonBlocked :: Street -> Bool
+                      filterNonBlocked (pos, d, (len, bl)) = (len == 3) && ((not bl) && (not $ snd (descendOpp pos d))) -- length==3 && ((not blocked E) || (not blocked W))
+
+                      descendOpp :: Position -> Direction -> (Int, Bool)
+                      descendOpp pos dir = trace ("start=" ++ show pos ++ ">" ++ show (findEnd b c dir pos pos) ) $descend b c (opp dir) (findEnd b c dir pos pos)
+
+type Street = (Position, Direction, (Int, Bool))
+
+printStreet :: Street -> Street
+printStreet (p,d,(i,b)) = (trace ("street: " ++ show p ++ "," ++ show d ++ ",(" ++ show i ++ "," ++ show b ++ ")")) (p,d,(i,b))
+
+printStreets :: [Street] -> [Street]
+printStreets xs = map (\x -> printStreet x) xs
 
 -- | Direction data record
 data Direction = N | S | E | W | NE | SE | NW | SW
@@ -194,12 +213,23 @@ colOf :: Board -> Position -> Maybe Col
 colOf b pos = lookup pos (pieces b)
 
 -- | Continues along the board in a direction along a line of pieces on the board
-descend :: Board -> Col -> Direction -> Position -> (Int, Bool)  -- length of line, if it is blocked by the opponent
-descend b c dir (x,y) = if outOfBounds b (x,y) then (0, True)
-                        else if colOf b (x,y) == Just (other c) then (0, True)
-                        else if colOf b (x,y) == Just c then (l+1, bl)
-                        else (0, False)  -- empty
+descend :: Board -> Col -> Direction -> Position -> (Int, Bool)  -- (length of line, if it is blocked by the opponent)
+descend b c dir (x,y) = if outOfBounds b (x,y) then (0, True)                   -- (x,y) is out of bounds
+                        else if colOf b (x,y) == Just (other c) then (0, True)  -- (x,y) has piece of other col
+                        else if colOf b (x,y) == Just c then (l+1, bl)          -- (x,y) has my piece => continue
+                        else (0, False)                                         -- empty
                         where (l, bl) = descend b c dir $ next (x,y) dir
+
+-- | Finds the end of a row of pieces on the board
+findEnd :: Board -> Col -> Direction
+                        -> Position -- ^ last position
+                        -> Position -- ^ current position to check
+                        -> Position -- ^ end of row
+findEnd b c dir (lx,ly) (x,y) = if outOfBounds b (x,y) then (lx,ly)
+                        else if colOf b (x,y) == Just (other c) then (lx,ly)
+                        else if colOf b (x,y) == Just c then (x, y)
+                        else (lx,ly)  -- empty
+                        where (nx, ny) = findEnd b c dir (x,y) $ next (x,y) dir
 
 {- | Finds the longest row of pieces of 1 colour that are not blocked by enemy
      pieces or are a victory row. Descends from every square into all directions. -}
