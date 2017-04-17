@@ -205,7 +205,7 @@ descend b c dir (x,y) = if outOfBounds b (x,y) then (0, True)
      pieces or are a victory row. Descends from every square into all directions. -}
 longest :: Board -> Col -> Int
 longest b c = max' $ map fst $  -- take the maximum length
-                filter (\ (l, bl) -> bl==False || l == target b)
+                filter (\ (l, bl) -> bl==False || l == target b || l < target b)
                     [if copp (x,y) dir /= Just c then descend b c dir (x,y)
                      -- The previous piece must not be of the same color
                      else (-target b -1, True)  -- if it is, ignore it
