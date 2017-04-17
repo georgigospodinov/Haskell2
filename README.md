@@ -2,7 +2,7 @@
 Gomoku Game for CS2006  
   
 ## Installation Instructions
-cabal install MissingH  gloss Network cereal either-unwrap bytestring-0.10.4.0 split  
+cabal install MissingH  gloss Network cereal either-unwrap bytestring-0.10.4.0 split Unique  
   
 cabal configure  
   
